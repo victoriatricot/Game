@@ -2,10 +2,6 @@
   --color-bg: #0b1622;
   --color-ocean: #12395e;
   --color-ocean-line: #1c4d78;
-  --color-p1: #2e8b57;
-  --color-p1-dark: #1f6640;
-  --color-p2: #b5442e;
-  --color-p2-dark: #8a3221;
   --color-fog: #060b12;
   --color-text: #e8f0f7;
   --color-text-dim: #8fa5ba;
@@ -35,29 +31,62 @@ body {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 10px 20px;
 }
 
 .topbar h1 {
+  width: 100%;
   font-size: clamp(1rem, 2.5vw, 1.4rem);
   margin: 0;
 }
 
-.view-switch {
+.switch-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.view-switch__label {
+.switch-row__label {
   color: var(--color-text-dim);
   font-size: 0.9rem;
 }
 
+.view-switch,
+.count-switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
 .player-btn {
-  border: 2px solid transparent;
+  border: 2px solid var(--btn-color, transparent);
   border-radius: 8px;
   padding: 8px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-text);
+  background: #1a2b3d;
+  opacity: 0.6;
+  transition: transform 0.1s ease, opacity 0.15s ease, background 0.15s ease;
+}
+
+.player-btn:active {
+  transform: scale(0.96);
+}
+
+.player-btn.active {
+  opacity: 1;
+  background: var(--btn-color);
+  color: #04121d;
+}
+
+.count-btn {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  min-width: 34px;
+  padding: 6px 10px;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -66,18 +95,13 @@ body {
   transition: transform 0.1s ease, border-color 0.15s ease;
 }
 
-.player-btn:active {
+.count-btn:active {
   transform: scale(0.96);
 }
 
-.player-btn--p1.active {
-  background: var(--color-p1-dark);
-  border-color: var(--color-p1);
-}
-
-.player-btn--p2.active {
-  background: var(--color-p2-dark);
-  border-color: var(--color-p2);
+.count-btn.active {
+  border-color: var(--color-text);
+  background: #26405a;
 }
 
 .board-wrap {
@@ -108,14 +132,6 @@ body {
   transition: background 0.15s ease, opacity 0.15s ease;
 }
 
-.cell--p1 {
-  background: var(--color-p1);
-}
-
-.cell--p2 {
-  background: var(--color-p2);
-}
-
 .cell--fogged {
   background: var(--color-fog);
 }
@@ -132,6 +148,10 @@ body {
   font-size: 0.85rem;
 }
 
+.legend__players {
+  display: contents;
+}
+
 .legend__item {
   display: flex;
   align-items: center;
@@ -146,6 +166,4 @@ body {
 }
 
 .swatch--ocean { background: var(--color-ocean); }
-.swatch--p1 { background: var(--color-p1); }
-.swatch--p2 { background: var(--color-p2); }
 .swatch--fog { background: var(--color-fog); }
