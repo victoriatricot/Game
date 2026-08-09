@@ -16,16 +16,8 @@ const PLAYER_COLORS = [
   "#55708a", // gris-bleu
 ];
 
-// 5 types de bateaux par joueur. Valeurs de départ simples (à équilibrer
-// plus tard) : points de vie = longueur, portée de déplacement et portée
-// d'attaque approximatives selon le rôle du navire.
-const SHIP_TYPES = [
-  { id: "carrier", name: "Porte-avions", code: "PA", length: 5, hp: 5, moveRange: 2, attackRange: 5 },
-  { id: "battleship", name: "Cuirassé", code: "CU", length: 4, hp: 4, moveRange: 2, attackRange: 4 },
-  { id: "cruiser", name: "Croiseur", code: "CR", length: 3, hp: 3, moveRange: 3, attackRange: 3 },
-  { id: "submarine", name: "Sous-marin", code: "SM", length: 3, hp: 3, moveRange: 3, attackRange: 2 },
-  { id: "destroyer", name: "Destroyer", code: "DE", length: 2, hp: 2, moveRange: 4, attackRange: 2 },
-];
+// Les types de bateaux (SHIP_TYPES) sont définis dans ships-config.js,
+// chargé avant ce script.
 
 // Ordre d'amarrage du port, de la case la plus proche de l'île (eaux
 // abritées) à la plus éloignée (eaux profondes) : le plus petit bateau
@@ -48,6 +40,20 @@ const BUILDING_SVG = `
 
 function playerColor(player) {
   return PLAYER_COLORS[(player - 1) % PLAYER_COLORS.length];
+}
+
+function shipTooltip(ship) {
+  const t = ship.type;
+  const detection =
+    t.detectionType === "stealth"
+      ? `furtif (détecté seulement à ${t.detectionRadius} cases ou moins)`
+      : "détection normale";
+  return (
+    `${t.name} — Joueur ${ship.player}\n` +
+    `PV ${ship.hp} · déplacement ${t.moveRange} · portée ${t.attackRange} · dégâts ${t.damage}\n` +
+    `Reconstruction ${t.scrapCost} scrap · rapporte ${t.scrapReward} scrap coulé\n` +
+    `Détection : ${detection}`
+  );
 }
 
 // Le plateau grandit avec le nombre de joueurs pour garder les zones
@@ -239,7 +245,8 @@ function buildAll() {
     el.style.gridColumn =
       ship.orientation === "horizontal" ? `${ship.col + 1} / span ${ship.type.length}` : `${ship.col + 1} / span 1`;
     el.style.setProperty("--zone-color", playerColor(ship.player));
-    el.title = `${ship.type.name} — Joueur ${ship.player} (PV ${ship.hp}, déplacement ${ship.type.moveRange}, portée ${ship.type.attackRange})`;
+    el.classList.toggle("ship--stealth", ship.type.detectionType === "stealth");
+    el.title = shipTooltip(ship);
 
     const label = document.createElement("span");
     label.className = "ship__label";

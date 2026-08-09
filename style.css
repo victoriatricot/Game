@@ -247,6 +247,13 @@ body {
   display: none;
 }
 
+/* Sous-marin : liseré pointillé pour signaler son type furtif (visible
+   uniquement par son propriétaire ; la furtivité s'applique aux
+   adversaires une fois la détection implémentée). */
+.ship--stealth {
+  border-style: dashed;
+}
+
 .ship__label {
   font-size: clamp(5px, 1.7vw, 11px);
   font-weight: 700;
