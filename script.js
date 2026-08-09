@@ -3,6 +3,7 @@ const MAX_PLAYERS = 8;
 const DEFAULT_PLAYERS = 2;
 const ZONE_SIZE = 4;
 const ZONE_MARGIN = 1;
+const HARBOR_DEPTH = 5; // nombre de bateaux empilés entre l'île et le large
 
 const PLAYER_COLORS = [
   "#2e8b57", // vert
@@ -14,6 +15,22 @@ const PLAYER_COLORS = [
   "#c0518f", // rose
   "#55708a", // gris-bleu
 ];
+
+// 5 types de bateaux par joueur. Valeurs de départ simples (à équilibrer
+// plus tard) : points de vie = longueur, portée de déplacement et portée
+// d'attaque approximatives selon le rôle du navire.
+const SHIP_TYPES = [
+  { id: "carrier", name: "Porte-avions", code: "PA", length: 5, hp: 5, moveRange: 2, attackRange: 5 },
+  { id: "battleship", name: "Cuirassé", code: "CU", length: 4, hp: 4, moveRange: 2, attackRange: 4 },
+  { id: "cruiser", name: "Croiseur", code: "CR", length: 3, hp: 3, moveRange: 3, attackRange: 3 },
+  { id: "submarine", name: "Sous-marin", code: "SM", length: 3, hp: 3, moveRange: 3, attackRange: 2 },
+  { id: "destroyer", name: "Destroyer", code: "DE", length: 2, hp: 2, moveRange: 4, attackRange: 2 },
+];
+
+// Ordre d'amarrage du port, de la case la plus proche de l'île (eaux
+// abritées) à la plus éloignée (eaux profondes) : le plus petit bateau
+// d'abord, le porte-avions au large.
+const HARBOR_ORDER = ["destroyer", "cruiser", "submarine", "battleship", "carrier"];
 
 // Bâtiment de la base : bunker de commandement avec antenne et fanion
 // coloré (la couleur du joueur est injectée via currentColor / --zone-color).
@@ -34,21 +51,21 @@ function playerColor(player) {
 }
 
 // Le plateau grandit avec le nombre de joueurs pour garder les zones
-// de départ bien espacées, jusqu'à un maximum raisonnable.
+// de départ (île + port) bien espacées, jusqu'à un maximum raisonnable.
 function boardSizeFor(numPlayers) {
-  const raw = 16 + (numPlayers - 2) * 2.5;
+  const raw = 22 + (numPlayers - 2) * 3;
   return Math.round(raw / 2) * 2;
 }
 
 // Répartit une île de base par joueur sur un cercle centré sur le plateau
-// (qui est lui-même rond), en gardant assez de marge pour qu'aucune île
-// ne dépasse du bord circulaire, quel que soit le nombre de joueurs.
+// (qui est lui-même rond). Le rayon laisse assez de place, au-delà de
+// chaque île, pour son port (HARBOR_DEPTH cases) sans dépasser le bord.
 function buildZones(numPlayers, cols, rows) {
   const centerCol = cols / 2;
   const centerRow = rows / 2;
   const boardRadius = Math.min(cols, rows) / 2;
-  const zoneDiagonalHalf = (ZONE_SIZE * Math.SQRT2) / 2;
-  const zoneRadius = boardRadius - zoneDiagonalHalf - ZONE_MARGIN;
+  const outwardExtent = ZONE_SIZE / 2 + HARBOR_DEPTH;
+  const zoneRadius = boardRadius - outwardExtent - ZONE_MARGIN;
   const startAngle = (3 * Math.PI) / 4;
 
   const zones = [];
@@ -60,7 +77,23 @@ function buildZones(numPlayers, cols, rows) {
     const row = clamp(Math.round(cy - ZONE_SIZE / 2), 0, rows - ZONE_SIZE);
     const col = clamp(Math.round(cx - ZONE_SIZE / 2), 0, cols - ZONE_SIZE);
 
-    zones.push({ player: i + 1, row, col });
+    // Le port est placé du côté de l'île le plus éloigné du centre du
+    // plateau (eaux libres), en choisissant l'axe (haut/bas ou
+    // gauche/droite) le plus proche de cette direction.
+    const zoneCenterRow = row + ZONE_SIZE / 2;
+    const zoneCenterCol = col + ZONE_SIZE / 2;
+    const dRow = zoneCenterRow - centerRow;
+    const dCol = zoneCenterCol - centerCol;
+    const harborSide =
+      Math.abs(dRow) >= Math.abs(dCol)
+        ? dRow >= 0
+          ? "bottom"
+          : "top"
+        : dCol >= 0
+          ? "right"
+          : "left";
+
+    zones.push({ player: i + 1, row, col, harborSide });
   }
   return zones;
 }
@@ -83,11 +116,54 @@ function zoneOwnerFor(row, col, zones) {
   return null;
 }
 
+// Place les 5 bateaux d'un joueur en formation fixe dans le port de sa
+// zone (empilés du côté de l'île qui fait face au large).
+function buildShipsForZone(zone) {
+  const horizontal = zone.harborSide === "top" || zone.harborSide === "bottom";
+
+  return HARBOR_ORDER.map((shipId, depthIndex) => {
+    const type = SHIP_TYPES.find((t) => t.id === shipId);
+    const offset = Math.floor((ZONE_SIZE - type.length) / 2);
+
+    let row;
+    let col;
+    if (horizontal) {
+      col = zone.col + offset;
+      row = zone.harborSide === "top" ? zone.row - 1 - depthIndex : zone.row + ZONE_SIZE + depthIndex;
+    } else {
+      row = zone.row + offset;
+      col = zone.harborSide === "left" ? zone.col - 1 - depthIndex : zone.col + ZONE_SIZE + depthIndex;
+    }
+
+    const orientation = horizontal ? "horizontal" : "vertical";
+    const cells = Array.from({ length: type.length }, (_, i) =>
+      horizontal ? { row, col: col + i } : { row: row + i, col }
+    );
+
+    return {
+      id: `p${zone.player}-${shipId}`,
+      player: zone.player,
+      type,
+      orientation,
+      row,
+      col,
+      hp: type.hp,
+      cells,
+    };
+  });
+}
+
 function buildBoard(numPlayers) {
   const size = boardSizeFor(numPlayers);
   const cols = size;
   const rows = size;
   const zones = buildZones(numPlayers, cols, rows);
+  const ships = zones.flatMap(buildShipsForZone);
+
+  const shipOwnerMap = new Map();
+  ships.forEach((ship) => {
+    ship.cells.forEach(({ row, col }) => shipOwnerMap.set(`${row},${col}`, ship.player));
+  });
 
   const cells = [];
   for (let row = 0; row < rows; row++) {
@@ -95,11 +171,12 @@ function buildBoard(numPlayers) {
       cells.push({ row, col, owner: zoneOwnerFor(row, col, zones) });
     }
   }
-  return { cols, rows, zones, cells };
+  return { cols, rows, zones, ships, shipOwnerMap, cells };
 }
 
-function isVisibleTo(cell, viewingPlayer) {
-  return cell.owner === viewingPlayer;
+function isVisibleTo(cell, viewingPlayer, shipOwnerMap) {
+  if (cell.owner === viewingPlayer) return true;
+  return shipOwnerMap.get(`${cell.row},${cell.col}`) === viewingPlayer;
 }
 
 const boardEl = document.getElementById("board");
@@ -112,6 +189,7 @@ let viewingPlayer = 1;
 let board = null;
 let cellEls = [];
 let islandEls = [];
+let shipEls = [];
 
 function buildAll() {
   board = buildBoard(numPlayers);
@@ -126,9 +204,10 @@ function buildAll() {
     el.className = "cell";
     el.dataset.row = cell.row;
     el.dataset.col = cell.col;
-    // Placement explicite : les îles réservent aussi des cellules de la
-    // grille via un placement explicite, ce qui décalerait les cases
-    // laissées à l'auto-placement si on ne fixait pas aussi leur position.
+    // Placement explicite : les îles et bateaux réservent aussi des
+    // cellules de la grille via un placement explicite, ce qui décalerait
+    // les cases laissées à l'auto-placement si on ne fixait pas aussi
+    // leur position.
     el.style.gridRow = `${cell.row + 1} / span 1`;
     el.style.gridColumn = `${cell.col + 1} / span 1`;
     el.setAttribute("role", "gridcell");
@@ -152,6 +231,25 @@ function buildAll() {
     return { zone, el: island };
   });
 
+  shipEls = board.ships.map((ship) => {
+    const el = document.createElement("div");
+    el.className = `ship ship--${ship.orientation}`;
+    el.style.gridRow =
+      ship.orientation === "horizontal" ? `${ship.row + 1} / span 1` : `${ship.row + 1} / span ${ship.type.length}`;
+    el.style.gridColumn =
+      ship.orientation === "horizontal" ? `${ship.col + 1} / span ${ship.type.length}` : `${ship.col + 1} / span 1`;
+    el.style.setProperty("--zone-color", playerColor(ship.player));
+    el.title = `${ship.type.name} — Joueur ${ship.player} (PV ${ship.hp}, déplacement ${ship.type.moveRange}, portée ${ship.type.attackRange})`;
+
+    const label = document.createElement("span");
+    label.className = "ship__label";
+    label.textContent = ship.type.code;
+    el.appendChild(label);
+
+    boardEl.appendChild(el);
+    return { ship, el };
+  });
+
   renderPlayerCountSwitch();
   renderViewSwitch();
   renderLegend();
@@ -161,14 +259,19 @@ function buildAll() {
 function render() {
   board.cells.forEach((cell, i) => {
     const el = cellEls[i];
-    const visible = isVisibleTo(cell, viewingPlayer);
+    const visible = isVisibleTo(cell, viewingPlayer, board.shipOwnerMap);
+    const isOwnLand = cell.owner === viewingPlayer;
     el.classList.toggle("cell--fogged", !visible);
-    el.classList.toggle("cell--zone", visible);
-    el.style.setProperty("--zone-color", visible ? playerColor(cell.owner) : "");
+    el.classList.toggle("cell--zone", isOwnLand);
+    el.style.setProperty("--zone-color", isOwnLand ? playerColor(cell.owner) : "");
   });
 
   islandEls.forEach(({ zone, el }) => {
     el.classList.toggle("island--hidden", zone.player !== viewingPlayer);
+  });
+
+  shipEls.forEach(({ ship, el }) => {
+    el.classList.toggle("ship--hidden", ship.player !== viewingPlayer);
   });
 }
 

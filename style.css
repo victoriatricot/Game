@@ -225,6 +225,41 @@ body {
   filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.5));
 }
 
+/* Bateaux : coque grise avec un liseré à la couleur du joueur, posés
+   en formation fixe dans le port qui entoure chaque île. */
+.ship {
+  position: relative;
+  margin: 3px;
+  border-radius: 999px;
+  background-image: linear-gradient(180deg, #d6dee5 0%, #8b98a6 45%, #4b5866 100%);
+  border: 2px solid var(--zone-color);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -3px 4px rgba(0, 0, 0, 0.35),
+    0 3px 6px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s ease;
+}
+
+.ship--hidden {
+  display: none;
+}
+
+.ship__label {
+  font-size: clamp(5px, 1.7vw, 11px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #16212c;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+.ship--vertical .ship__label {
+  writing-mode: vertical-rl;
+}
+
 .legend {
   width: 100%;
   max-width: 900px;
@@ -239,6 +274,19 @@ body {
 
 .legend__players {
   display: contents;
+}
+
+.legend--ships {
+  padding-top: 0;
+  gap: 10px 16px;
+}
+
+.legend--ships .legend__item {
+  display: inline;
+}
+
+.legend__label {
+  color: var(--color-text-dim);
 }
 
 .legend__item {
