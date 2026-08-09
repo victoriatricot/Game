@@ -1,9 +1,17 @@
 # Bataille Navale — Prototype
 
-Prototype jouable en local, sans serveur. Étape 1 : le plateau, les zones de
-départ et le brouillard de guerre.
+Prototype jouable, sans serveur pour l'instant (tout tourne dans le
+navigateur).
 
-## Lancer le prototype
+## Jouer en ligne
+
+**https://victoriatricot.github.io/Game/**
+
+Chaque push sur la branche de développement redéploie automatiquement le site
+via GitHub Actions (`.github/workflows/deploy-pages.yml`) — compter environ une
+minute après le push.
+
+## Lancer le prototype en local
 
 Aucune dépendance ni build. Ouvre `index.html` dans un navigateur, ou sers le
 dossier avec un serveur statique :
