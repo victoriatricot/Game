@@ -1,52 +1,86 @@
 # Bataille Navale — Prototype
 
-Prototype jouable, sans serveur pour l'instant (tout tourne dans le
-navigateur).
+Jeu de bataille navale multijoueur à tours simultanés.
 
-## Jouer en ligne
+## Jouer
 
-**https://victoriatricot.github.io/Game/**
+### En ligne (multijoueur)
 
-Chaque push sur la branche de développement redéploie automatiquement le site
-via GitHub Actions (`.github/workflows/deploy-pages.yml`) — compter environ une
-minute après le push.
+Nécessite le serveur de jeu (voir « Lancer le serveur » plus bas). Un joueur
+crée un salon, obtient un code à 4 lettres, les autres le rejoignent avec ce
+code, puis l'hôte lance la partie.
 
-## Lancer le prototype en local
+### En local (hotseat)
 
-Aucune dépendance ni build. Ouvre `index.html` dans un navigateur, ou sers le
-dossier avec un serveur statique :
+**https://victoriatricot.github.io/Game/** — la version publiée sur GitHub
+Pages est un site statique : le multijoueur en ligne y est indisponible
+(pas de serveur), mais la partie locale sur un seul écran fonctionne. Chaque
+joueur donne ses ordres à son tour via la bascule « Vue », puis « Fin du
+tour » résout tout simultanément.
+
+## Lancer le serveur
 
 ```bash
-python3 -m http.server 8000
-# puis ouvrir http://localhost:8000
+npm install
+npm start
+# puis ouvrir http://localhost:3000
 ```
+
+Le serveur sert aussi les fichiers statiques, donc une seule commande suffit
+pour avoir le jeu complet en local.
+
+## Architecture
+
+| Fichier | Rôle |
+| --- | --- |
+| `ships-config.js` | Stats des 5 types de bateaux. **Seul fichier à modifier pour rééquilibrer.** |
+| `game-core.js` | Logique de jeu pure (plateau, ordres, résolution des tours, brouillard de guerre). Partagée serveur/navigateur, sans dépendance au DOM. |
+| `server/server.js` | Serveur autoritaire : salons, WebSocket, arbitrage des tours. |
+| `script.js` | Client : rendu et interactions. |
+| `index.html`, `style.css` | Interface. |
+
+### Le serveur fait autorité — et pourquoi c'est indispensable
+
+L'état réel de la partie ne quitte jamais le serveur. Chaque client reçoit
+uniquement `viewFor(state, sonJoueur)` : sa propre base, sa propre flotte,
+son scrap. Les positions adverses ne sont pas envoyées du tout.
+
+C'est structurant pour ce jeu : le brouillard de guerre et le sous-marin
+furtif sont des mécaniques centrales. Si le navigateur connaissait toute la
+partie (avec un simple masquage à l'affichage), n'importe qui pourrait lire
+les positions ennemies dans les outils développeur et ces mécaniques
+n'auraient plus aucun sens.
+
+Dans le même esprit, tous les ordres sont **revalidés côté serveur** : un
+client ne peut ni donner d'ordre à un bateau adverse, ni dépasser la portée
+de déplacement ou de tir de ses propres bateaux. Les tentatives sont
+silencieusement ignorées.
 
 ## Ce qui est fait
 
-- Plateau circulaire (grille CSS carrée découpée en cercle), responsive, dont
-  la taille s'adapte au nombre de joueurs (2 à 8, sélecteur en haut).
-- Une base par joueur : une île texturée avec un bâtiment de commandement,
-  répartie sur un cercle inscrit dans le plateau pour ne jamais dépasser du
-  bord ni chevaucher une autre base.
-- Brouillard de guerre : bascule "Vue Joueur X" en haut de l'écran pour
-  simuler ce que chaque joueur voit — seules sa base et sa flotte sont
-  visibles, le reste du plateau est masqué.
-- Les 5 types de bateaux par joueur (porte-avions, cuirassé, croiseur,
-  sous-marin, destroyer), amarrés en formation fixe dans le port qui entoure
-  chaque île. Stats (points de vie, déplacement, portée, dégâts, coûts en
-  scrap, type de détection) centralisées dans `ships-config.js` — c'est le
-  seul fichier à modifier pour rééquilibrer.
-- Tour simultané, version simple pour tester rapidement en hotseat : cliquez
-  un de vos bateaux, choisissez "Déplacer" ou "Attaquer", cliquez une case à
-  portée, puis "Fin du tour" pour résoudre les ordres de tous les joueurs
-  d'un coup (changez de "Vue" pour donner ses ordres à chaque joueur avant de
-  finir le tour). Tir à l'aveugle pour l'instant (pas encore de zone de
-  détection approximative), et un conflit de déplacement entre deux bateaux
-  annule simplement les deux ordres — à raffiner à l'étape combat.
+- Plateau circulaire dont la taille s'adapte au nombre de joueurs (2 à 8).
+- Une base par joueur : île texturée avec bâtiment de commandement, répartie
+  sur un cercle inscrit dans le plateau.
+- Brouillard de guerre appliqué à la source (serveur), pas à l'affichage.
+- Les 5 types de bateaux, amarrés en formation fixe dans le port de chaque
+  île, avec leurs stats propres.
+- Tours simultanés : chaque joueur donne un ordre par bateau (déplacement ou
+  attaque), la résolution a lieu quand tout le monde a validé.
+- Combat : dégâts, coulage, scrap gagné à la destruction.
+- Multijoueur en ligne par salons (WebSocket), avec repli automatique en
+  mode local si aucun serveur n'est joignable.
 
-## Prochaines étapes (à valider une par une)
+## Prochaines étapes
 
-1. Détection approximative (avec le cas particulier du sous-marin furtif) et
-   logique touché/coulé case par case, gestion plus fine des collisions de
-   déplacement (repousser au lieu d'annuler).
-2. Ressources : scrap à la destruction d'un bateau, reconstruction à la base.
+1. **Détection approximative** : afficher les ennemis repérés comme une zone
+   floue plutôt que rien, avec le cas particulier du sous-marin furtif
+   (`detectionType` est déjà prévu dans `ships-config.js`). Tout se joue
+   dans `viewFor()`.
+2. **Touché-coulé** : immobiliser un bateau touché, révéler sa position
+   exacte, exiger de viser les cases restantes.
+3. **Collisions** : repousser vers une case libre au lieu d'annuler le
+   déplacement.
+4. **Reconstruction** : dépenser le scrap à la base pour reconstruire un
+   bateau.
+5. **Persistance** : base PostgreSQL et déploiement du serveur sur Railway
+   (les parties sont actuellement en mémoire — un redémarrage les perd).

@@ -1,0 +1,17 @@
+{
+  "name": "bataille-navale",
+  "version": "0.1.0",
+  "description": "Prototype de bataille navale multijoueur à tours simultanés",
+  "private": true,
+  "type": "commonjs",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

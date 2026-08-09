@@ -9,48 +9,102 @@
 <body>
   <header class="topbar">
     <h1>Bataille Navale — Prototype</h1>
-    <div class="switch-row">
-      <span class="switch-row__label">Joueurs :</span>
-      <div id="player-count-switch" class="count-switch"></div>
+    <div id="session-info" class="session-info"></div>
+  </header>
+
+  <!-- Écran d'accueil : choix du mode de jeu -->
+  <section id="lobby" class="lobby">
+    <div class="lobby__panel">
+      <h2 class="lobby__title">Jouer en ligne</h2>
+      <p id="net-status" class="lobby__status">Connexion au serveur…</p>
+
+      <div class="lobby__row">
+        <label class="lobby__label" for="input-name">Votre pseudo</label>
+        <input id="input-name" class="lobby__input" type="text" maxlength="16" placeholder="Amiral" />
+      </div>
+
+      <div class="lobby__row">
+        <label class="lobby__label" for="select-players">Nombre de joueurs</label>
+        <select id="select-players" class="lobby__input">
+          <option value="2" selected>2 joueurs</option>
+          <option value="3">3 joueurs</option>
+          <option value="4">4 joueurs</option>
+          <option value="5">5 joueurs</option>
+          <option value="6">6 joueurs</option>
+          <option value="7">7 joueurs</option>
+          <option value="8">8 joueurs</option>
+        </select>
+      </div>
+
+      <button id="btn-create" class="lobby__btn lobby__btn--primary" disabled>Créer un salon</button>
+
+      <div class="lobby__row lobby__row--join">
+        <input id="input-code" class="lobby__input" type="text" maxlength="4" placeholder="CODE" />
+        <button id="btn-join" class="lobby__btn" disabled>Rejoindre</button>
+      </div>
+
+      <hr class="lobby__sep" />
+
+      <h2 class="lobby__title">Jouer en local</h2>
+      <p class="lobby__hint">Sur un seul écran, chacun son tour pour donner ses ordres.</p>
+      <button id="btn-local" class="lobby__btn">Partie locale (hotseat)</button>
     </div>
-    <div class="switch-row">
+  </section>
+
+  <!-- Salon d'attente en ligne -->
+  <section id="waiting" class="lobby" hidden>
+    <div class="lobby__panel">
+      <h2 class="lobby__title">Salon <span id="room-code" class="room-code"></span></h2>
+      <p class="lobby__hint">Partagez ce code avec les autres joueurs.</p>
+      <ul id="player-list" class="player-list"></ul>
+      <button id="btn-start" class="lobby__btn lobby__btn--primary" hidden>Lancer la partie</button>
+      <p id="waiting-hint" class="lobby__hint"></p>
+    </div>
+  </section>
+
+  <!-- Jeu -->
+  <div id="game" hidden>
+    <div class="switch-row" id="view-switch-row">
       <span class="switch-row__label">Vue :</span>
       <div id="view-switch" class="view-switch"></div>
     </div>
-  </header>
 
-  <div id="turn-bar" class="turn-bar">
-    <div class="turn-bar__status">
-      <span id="turn-counter" class="turn-counter">Tour 1</span>
-      <span id="selection-info" class="selection-info"></span>
+    <div id="turn-bar" class="turn-bar">
+      <div class="turn-bar__status">
+        <span id="turn-counter" class="turn-counter">Tour 1</span>
+        <span id="selection-info" class="selection-info"></span>
+      </div>
+      <div class="turn-bar__actions">
+        <button id="btn-move" class="mode-btn" hidden>Déplacer</button>
+        <button id="btn-attack" class="mode-btn" hidden>Attaquer</button>
+        <button id="btn-cancel" class="mode-btn" hidden>Désélectionner</button>
+        <button id="btn-end-turn" class="end-turn-btn">Fin du tour</button>
+      </div>
     </div>
-    <div class="turn-bar__actions">
-      <button id="btn-move" class="mode-btn" hidden>Déplacer</button>
-      <button id="btn-attack" class="mode-btn" hidden>Attaquer</button>
-      <button id="btn-cancel" class="mode-btn" hidden>Désélectionner</button>
-      <button id="btn-end-turn" class="end-turn-btn">Fin du tour</button>
-    </div>
+
+    <main class="board-wrap">
+      <div id="board" class="board" role="grid" aria-label="Plateau de jeu"></div>
+    </main>
+
+    <p id="event-log" class="event-log"></p>
+
+    <footer class="legend">
+      <div class="legend__item"><span class="swatch swatch--ocean"></span> Océan</div>
+      <div id="legend-players" class="legend__players"></div>
+      <div class="legend__item"><span class="swatch swatch--fog"></span> Brouillard de guerre</div>
+    </footer>
+    <footer class="legend legend--ships">
+      <span class="legend__label">Navires :</span>
+      <span class="legend__item">PA porte-avions</span>
+      <span class="legend__item">CU cuirassé</span>
+      <span class="legend__item">CR croiseur</span>
+      <span class="legend__item">SM sous-marin (furtif, liseré pointillé)</span>
+      <span class="legend__item">DE destroyer</span>
+    </footer>
   </div>
 
-  <main class="board-wrap">
-    <div id="board" class="board" role="grid" aria-label="Plateau de jeu"></div>
-  </main>
-
-  <footer class="legend">
-    <div class="legend__item"><span class="swatch swatch--ocean"></span> Océan</div>
-    <div id="legend-players" class="legend__players"></div>
-    <div class="legend__item"><span class="swatch swatch--fog"></span> Brouillard de guerre</div>
-  </footer>
-  <footer class="legend legend--ships">
-    <span class="legend__label">Navires :</span>
-    <span class="legend__item">PA porte-avions</span>
-    <span class="legend__item">CU cuirassé</span>
-    <span class="legend__item">CR croiseur</span>
-    <span class="legend__item">SM sous-marin (furtif, liseré pointillé)</span>
-    <span class="legend__item">DE destroyer</span>
-  </footer>
-
   <script src="ships-config.js"></script>
+  <script src="game-core.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

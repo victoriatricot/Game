@@ -33,72 +33,83 @@
  *                   `detectionRadius` cases ou moins de sa position RÉELLE.
  *                   Il redevient invisible dès que cette condition cesse
  *                   d'être vraie — pas de mémoire de détection passée.
+ *
+ * Ce fichier est chargé à la fois par le navigateur (variable globale
+ * SHIP_TYPES) et par le serveur Node (module.exports).
  */
-const SHIP_TYPES = [
-  {
-    id: "destroyer",
-    name: "Destroyer",
-    code: "DE",
-    length: 2,
-    hp: 2,
-    moveRange: 4,
-    attackRange: 1,
-    damage: 1,
-    scrapCost: 6,
-    scrapReward: 3,
-    detectionType: "normal",
-  },
-  {
-    id: "submarine",
-    name: "Sous-marin",
-    code: "SM",
-    length: 3,
-    hp: 3,
-    moveRange: 3,
-    attackRange: 2,
-    damage: 2,
-    scrapCost: 9,
-    scrapReward: 5,
-    detectionType: "stealth",
-    detectionRadius: 2,
-  },
-  {
-    id: "cruiser",
-    name: "Croiseur",
-    code: "CR",
-    length: 3,
-    hp: 3,
-    moveRange: 3,
-    attackRange: 3,
-    damage: 2,
-    scrapCost: 9,
-    scrapReward: 5,
-    detectionType: "normal",
-  },
-  {
-    id: "battleship",
-    name: "Cuirassé",
-    code: "CU",
-    length: 4,
-    hp: 4,
-    moveRange: 2,
-    attackRange: 3,
-    damage: 3,
-    scrapCost: 12,
-    scrapReward: 6,
-    detectionType: "normal",
-  },
-  {
-    id: "carrier",
-    name: "Porte-avions",
-    code: "PA",
-    length: 5,
-    hp: 5,
-    moveRange: 2,
-    attackRange: 5,
-    damage: 1,
-    scrapCost: 15,
-    scrapReward: 8,
-    detectionType: "normal",
-  },
-];
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.SHIP_TYPES = factory();
+  }
+})(typeof self !== "undefined" ? self : this, function () {
+  return [
+    {
+      id: "destroyer",
+      name: "Destroyer",
+      code: "DE",
+      length: 2,
+      hp: 2,
+      moveRange: 4,
+      attackRange: 1,
+      damage: 1,
+      scrapCost: 6,
+      scrapReward: 3,
+      detectionType: "normal",
+    },
+    {
+      id: "submarine",
+      name: "Sous-marin",
+      code: "SM",
+      length: 3,
+      hp: 3,
+      moveRange: 3,
+      attackRange: 2,
+      damage: 2,
+      scrapCost: 9,
+      scrapReward: 5,
+      detectionType: "stealth",
+      detectionRadius: 2,
+    },
+    {
+      id: "cruiser",
+      name: "Croiseur",
+      code: "CR",
+      length: 3,
+      hp: 3,
+      moveRange: 3,
+      attackRange: 3,
+      damage: 2,
+      scrapCost: 9,
+      scrapReward: 5,
+      detectionType: "normal",
+    },
+    {
+      id: "battleship",
+      name: "Cuirassé",
+      code: "CU",
+      length: 4,
+      hp: 4,
+      moveRange: 2,
+      attackRange: 3,
+      damage: 3,
+      scrapCost: 12,
+      scrapReward: 6,
+      detectionType: "normal",
+    },
+    {
+      id: "carrier",
+      name: "Porte-avions",
+      code: "PA",
+      length: 5,
+      hp: 5,
+      moveRange: 2,
+      attackRange: 5,
+      damage: 1,
+      scrapCost: 15,
+      scrapReward: 8,
+      detectionType: "normal",
+    },
+  ];
+});
