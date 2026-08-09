@@ -1,11 +1,14 @@
 :root {
   --color-bg: #0b1622;
-  --color-ocean: #12395e;
-  --color-ocean-line: #1c4d78;
+  --color-ocean-shallow: #1f5c8a;
+  --color-ocean: #123a5e;
+  --color-ocean-deep: #081f36;
   --color-fog: #060b12;
+  --color-fog-light: #101c28;
   --color-text: #e8f0f7;
   --color-text-dim: #8fa5ba;
   --cell-gap: 2px;
+  --noise-tex: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 * {
@@ -15,7 +18,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--color-bg);
+  background: radial-gradient(ellipse at 50% -10%, #16283c, var(--color-bg) 60%);
   color: var(--color-text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   display: flex;
@@ -38,6 +41,7 @@ body {
   width: 100%;
   font-size: clamp(1rem, 2.5vw, 1.4rem);
   margin: 0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .switch-row {
@@ -59,49 +63,46 @@ body {
   gap: 8px;
 }
 
-.player-btn {
-  border: 2px solid var(--btn-color, transparent);
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  color: var(--color-text);
-  background: #1a2b3d;
-  opacity: 0.6;
-  transition: transform 0.1s ease, opacity 0.15s ease, background 0.15s ease;
-}
-
-.player-btn:active {
-  transform: scale(0.96);
-}
-
-.player-btn.active {
-  opacity: 1;
-  background: var(--btn-color);
-  color: #04121d;
-}
-
+.player-btn,
 .count-btn {
   border: 2px solid transparent;
   border-radius: 8px;
-  min-width: 34px;
-  padding: 6px 10px;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   color: var(--color-text);
-  background: #1a2b3d;
-  transition: transform 0.1s ease, border-color 0.15s ease;
+  background: linear-gradient(180deg, #24384e, #16232f);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s ease, opacity 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
+.player-btn:active,
 .count-btn:active {
   transform: scale(0.96);
 }
 
+.player-btn {
+  border-color: var(--btn-color, transparent);
+  padding: 8px 14px;
+  opacity: 0.6;
+}
+
+.player-btn.active {
+  opacity: 1;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--btn-color) 88%, white 12%), var(--btn-color));
+  color: #04121d;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.count-btn {
+  min-width: 34px;
+  padding: 6px 10px;
+}
+
 .count-btn.active {
-  border-color: var(--color-text);
-  background: #26405a;
+  border-color: rgba(255, 255, 255, 0.5);
+  background: linear-gradient(180deg, #3a5c7c, #1c3348);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
 .board-wrap {
@@ -115,25 +116,73 @@ body {
 .board {
   --cols: 16;
   --rows: 16;
+  position: relative;
   display: grid;
   grid-template-columns: repeat(var(--cols), 1fr);
   grid-template-rows: repeat(var(--rows), 1fr);
   gap: var(--cell-gap);
   width: min(86vw, 76vh, 800px);
   aspect-ratio: 1 / 1;
-  background: var(--color-ocean-line);
   padding: var(--cell-gap);
   border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background-image:
+    var(--noise-tex),
+    radial-gradient(ellipse at 28% 15%, rgba(255, 255, 255, 0.1), transparent 55%),
+    linear-gradient(165deg, var(--color-ocean-shallow) 0%, var(--color-ocean) 55%, var(--color-ocean-deep) 100%);
+  background-blend-mode: overlay, normal, normal;
+  background-size: 160px 160px, 100% 100%, 100% 100%;
+  background-position: 0 0, 0 0, 0 0;
+  box-shadow:
+    inset 0 0 90px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 18px 40px -10px rgba(0, 0, 0, 0.65);
+  animation: drift-water 55s linear infinite;
+}
+
+@keyframes drift-water {
+  from { background-position: 0 0, 0 0, 0 0; }
+  to { background-position: 160px 100px, 0 0, 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board {
+    animation: none;
+  }
 }
 
 .cell {
-  background: var(--color-ocean);
-  border-radius: 2px;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  position: relative;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  transition: box-shadow 0.15s ease;
 }
 
 .cell--fogged {
-  background: var(--color-fog);
+  background-image:
+    var(--noise-tex),
+    radial-gradient(circle at 45% 35%, rgba(255, 255, 255, 0.05), transparent 65%),
+    linear-gradient(165deg, var(--color-fog-light), var(--color-fog) 85%);
+  background-blend-mode: overlay, normal, normal;
+  background-size: 90px 90px, 100% 100%, 100% 100%;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.65);
+}
+
+.cell--zone {
+  background-image:
+    var(--noise-tex),
+    radial-gradient(circle at 30% 22%, color-mix(in srgb, var(--zone-color) 55%, white 45%), transparent 55%),
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, var(--zone-color) 85%, white 15%),
+      var(--zone-color) 55%,
+      color-mix(in srgb, var(--zone-color) 75%, black 25%) 100%
+    );
+  background-blend-mode: overlay, normal, normal;
+  background-size: 50px 50px, 100% 100%, 100% 100%;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.35);
 }
 
 .legend {
@@ -163,7 +212,13 @@ body {
   height: 14px;
   border-radius: 3px;
   display: inline-block;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
-.swatch--ocean { background: var(--color-ocean); }
-.swatch--fog { background: var(--color-fog); }
+.swatch--ocean {
+  background: linear-gradient(165deg, var(--color-ocean-shallow), var(--color-ocean-deep));
+}
+
+.swatch--fog {
+  background: linear-gradient(165deg, var(--color-fog-light), var(--color-fog));
+}

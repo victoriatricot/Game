@@ -129,7 +129,8 @@ function render() {
     const el = cellEls[i];
     const visible = isVisibleTo(cell, viewingPlayer);
     el.classList.toggle("cell--fogged", !visible);
-    el.style.backgroundColor = visible ? playerColor(cell.owner) : "";
+    el.classList.toggle("cell--zone", visible);
+    el.style.setProperty("--zone-color", visible ? playerColor(cell.owner) : "");
   });
 }
 
