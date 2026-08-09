@@ -124,7 +124,8 @@ body {
   width: min(86vw, 76vh, 800px);
   aspect-ratio: 1 / 1;
   padding: var(--cell-gap);
-  border-radius: 6px;
+  border-radius: 50%;
+  overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background-image:
     var(--noise-tex),
@@ -183,6 +184,45 @@ body {
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.2),
     inset 0 -3px 5px rgba(0, 0, 0, 0.35);
+}
+
+/* Île de base : un vrai morceau de terrain (sable -> herbe), avec un
+   anneau de la couleur du joueur pour l'identifier, et son bâtiment. */
+.island {
+  position: relative;
+  border-radius: 26%;
+  background-image:
+    var(--noise-tex),
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.4), transparent 58%),
+    linear-gradient(165deg, #ddc78f 0%, #bda868 38%, #8a9c54 72%, #66803f 100%);
+  background-blend-mode: overlay, normal, normal;
+  background-size: 46px 46px, 100% 100%, 100% 100%;
+  box-shadow:
+    inset 0 0 0 3px color-mix(in srgb, var(--zone-color) 85%, white 15%),
+    inset 0 -8px 12px rgba(0, 0, 0, 0.4),
+    inset 0 4px 8px rgba(255, 255, 255, 0.15),
+    0 8px 16px rgba(0, 0, 0, 0.5);
+  transition: opacity 0.15s ease;
+}
+
+.island--hidden {
+  display: none;
+}
+
+.building {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  color: var(--zone-color);
+}
+
+.building svg {
+  width: 58%;
+  height: 58%;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.5));
 }
 
 .legend {

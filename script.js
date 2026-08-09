@@ -15,6 +15,20 @@ const PLAYER_COLORS = [
   "#55708a", // gris-bleu
 ];
 
+// Bâtiment de la base : bunker de commandement avec antenne et fanion
+// coloré (la couleur du joueur est injectée via currentColor / --zone-color).
+const BUILDING_SVG = `
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="32" cy="54" rx="20" ry="4" fill="rgba(0,0,0,0.35)"/>
+  <rect x="30" y="12" width="4" height="20" fill="#2c3640"/>
+  <path d="M34 12 L50 18 L34 24 Z" fill="currentColor"/>
+  <rect x="14" y="30" width="36" height="24" rx="3" fill="#6b7684" stroke="#2c3640" stroke-width="1.5"/>
+  <rect x="14" y="30" width="36" height="8" fill="#7d8a99"/>
+  <rect x="18" y="34" width="6" height="5" fill="#cfe3f0"/>
+  <rect x="40" y="34" width="6" height="5" fill="#cfe3f0"/>
+  <rect x="27" y="40" width="10" height="14" fill="#2c3640"/>
+</svg>`;
+
 function playerColor(player) {
   return PLAYER_COLORS[(player - 1) % PLAYER_COLORS.length];
 }
@@ -26,28 +40,25 @@ function boardSizeFor(numPlayers) {
   return Math.round(raw / 2) * 2;
 }
 
-// Répartit une zone de départ par joueur le long du pourtour du plateau
-// (coins pour 2/4 joueurs, coins + bords pour les autres), façon carte
-// multijoueur (chaque joueur dans "son coin"), en gardant un maximum
-// d'écart entre les joueurs quel que soit leur nombre.
+// Répartit une île de base par joueur sur un cercle centré sur le plateau
+// (qui est lui-même rond), en gardant assez de marge pour qu'aucune île
+// ne dépasse du bord circulaire, quel que soit le nombre de joueurs.
 function buildZones(numPlayers, cols, rows) {
-  const colCenter = (cols - ZONE_SIZE) / 2;
-  const rowCenter = (rows - ZONE_SIZE) / 2;
-  const halfColRange = colCenter - ZONE_MARGIN;
-  const halfRowRange = rowCenter - ZONE_MARGIN;
+  const centerCol = cols / 2;
+  const centerRow = rows / 2;
+  const boardRadius = Math.min(cols, rows) / 2;
+  const zoneDiagonalHalf = (ZONE_SIZE * Math.SQRT2) / 2;
+  const zoneRadius = boardRadius - zoneDiagonalHalf - ZONE_MARGIN;
   const startAngle = (3 * Math.PI) / 4;
 
   const zones = [];
   for (let i = 0; i < numPlayers; i++) {
     const angle = startAngle + (i * 2 * Math.PI) / numPlayers;
-    const dirX = Math.cos(angle);
-    const dirY = Math.sin(angle);
-    // Normalise la direction vers le bord du carré (et non du cercle
-    // inscrit), pour que les joueurs s'étalent jusqu'aux coins/bords.
-    const scale = 1 / Math.max(Math.abs(dirX), Math.abs(dirY));
+    const cx = centerCol + zoneRadius * Math.cos(angle);
+    const cy = centerRow + zoneRadius * Math.sin(angle);
 
-    const row = clamp(Math.round(rowCenter + halfRowRange * dirY * scale), 0, rows - ZONE_SIZE);
-    const col = clamp(Math.round(colCenter + halfColRange * dirX * scale), 0, cols - ZONE_SIZE);
+    const row = clamp(Math.round(cy - ZONE_SIZE / 2), 0, rows - ZONE_SIZE);
+    const col = clamp(Math.round(cx - ZONE_SIZE / 2), 0, cols - ZONE_SIZE);
 
     zones.push({ player: i + 1, row, col });
   }
@@ -100,6 +111,7 @@ let numPlayers = DEFAULT_PLAYERS;
 let viewingPlayer = 1;
 let board = null;
 let cellEls = [];
+let islandEls = [];
 
 function buildAll() {
   board = buildBoard(numPlayers);
@@ -108,14 +120,36 @@ function buildAll() {
   boardEl.style.setProperty("--cols", board.cols);
   boardEl.style.setProperty("--rows", board.rows);
   boardEl.innerHTML = "";
+
   cellEls = board.cells.map((cell) => {
     const el = document.createElement("div");
     el.className = "cell";
     el.dataset.row = cell.row;
     el.dataset.col = cell.col;
+    // Placement explicite : les îles réservent aussi des cellules de la
+    // grille via un placement explicite, ce qui décalerait les cases
+    // laissées à l'auto-placement si on ne fixait pas aussi leur position.
+    el.style.gridRow = `${cell.row + 1} / span 1`;
+    el.style.gridColumn = `${cell.col + 1} / span 1`;
     el.setAttribute("role", "gridcell");
     boardEl.appendChild(el);
     return el;
+  });
+
+  islandEls = board.zones.map((zone) => {
+    const island = document.createElement("div");
+    island.className = "island";
+    island.style.gridRow = `${zone.row + 1} / span ${ZONE_SIZE}`;
+    island.style.gridColumn = `${zone.col + 1} / span ${ZONE_SIZE}`;
+    island.style.setProperty("--zone-color", playerColor(zone.player));
+
+    const building = document.createElement("div");
+    building.className = "building";
+    building.innerHTML = BUILDING_SVG;
+    island.appendChild(building);
+
+    boardEl.appendChild(island);
+    return { zone, el: island };
   });
 
   renderPlayerCountSwitch();
@@ -131,6 +165,10 @@ function render() {
     el.classList.toggle("cell--fogged", !visible);
     el.classList.toggle("cell--zone", visible);
     el.style.setProperty("--zone-color", visible ? playerColor(cell.owner) : "");
+  });
+
+  islandEls.forEach(({ zone, el }) => {
+    el.classList.toggle("island--hidden", zone.player !== viewingPlayer);
   });
 }
 
@@ -168,7 +206,7 @@ function renderLegend() {
   for (let p = 1; p <= numPlayers; p++) {
     const item = document.createElement("div");
     item.className = "legend__item";
-    item.innerHTML = `<span class="swatch" style="background:${playerColor(p)}"></span> Zone de départ Joueur ${p}`;
+    item.innerHTML = `<span class="swatch" style="background:${playerColor(p)}"></span> Base du Joueur ${p}`;
     legendPlayersEl.appendChild(item);
   }
 }
