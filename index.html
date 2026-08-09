@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Bataille Navale — Prototype</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Bataille Navale — Prototype</h1>
+    <div class="view-switch">
+      <span class="view-switch__label">Vue :</span>
+      <button id="btn-view-p1" class="player-btn player-btn--p1" data-player="1">Joueur 1</button>
+      <button id="btn-view-p2" class="player-btn player-btn--p2" data-player="2">Joueur 2</button>
+    </div>
+  </header>
+
+  <main class="board-wrap">
+    <div id="board" class="board" role="grid" aria-label="Plateau de jeu"></div>
+  </main>
+
+  <footer class="legend">
+    <div class="legend__item"><span class="swatch swatch--ocean"></span> Océan</div>
+    <div class="legend__item"><span class="swatch swatch--p1"></span> Zone de départ Joueur 1</div>
+    <div class="legend__item"><span class="swatch swatch--p2"></span> Zone de départ Joueur 2</div>
+    <div class="legend__item"><span class="swatch swatch--fog"></span> Brouillard de guerre</div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
