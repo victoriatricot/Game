@@ -185,10 +185,52 @@ function isVisibleTo(cell, viewingPlayer, shipOwnerMap) {
   return shipOwnerMap.get(`${cell.row},${cell.col}`) === viewingPlayer;
 }
 
+function chebyshevDist(row1, col1, row2, col2) {
+  return Math.max(Math.abs(row1 - row2), Math.abs(col1 - col2));
+}
+
+function isLandCell(row, col) {
+  if (row < 0 || col < 0 || row >= board.rows || col >= board.cols) return true;
+  return board.cells[row * board.cols + col].owner !== null;
+}
+
+// Un bateau se déplace en gardant sa longueur et son orientation (pas de
+// rotation pour cette première version) : on vérifie juste que toutes ses
+// cases d'arrivée restent en mer et dans les limites du plateau. Les
+// éventuels conflits avec un autre bateau sont tranchés à la résolution
+// du tour (voir endTurn), pas ici.
+function isValidMoveOrder(ship, row, col) {
+  if (chebyshevDist(ship.row, ship.col, row, col) > ship.type.moveRange) return false;
+  const dRow = row - ship.row;
+  const dCol = col - ship.col;
+  return ship.cells.every(({ row: r, col: c }) => !isLandCell(r + dRow, c + dCol));
+}
+
+// Tir "à l'aveugle" pour cette première version : pas encore de zone de
+// détection approximative (voir ships-config.js), on vise directement une
+// case à portée et la résolution du tour dit si ça touche ou non.
+function isValidAttackOrder(ship, row, col) {
+  if (row < 0 || col < 0 || row >= board.rows || col >= board.cols) return false;
+  return chebyshevDist(ship.row, ship.col, row, col) <= ship.type.attackRange;
+}
+
+function repositionShipEl(ship, el) {
+  el.style.gridRow =
+    ship.orientation === "horizontal" ? `${ship.row + 1} / span 1` : `${ship.row + 1} / span ${ship.type.length}`;
+  el.style.gridColumn =
+    ship.orientation === "horizontal" ? `${ship.col + 1} / span ${ship.type.length}` : `${ship.col + 1} / span 1`;
+}
+
 const boardEl = document.getElementById("board");
 const viewSwitchEl = document.getElementById("view-switch");
 const playerCountEl = document.getElementById("player-count-switch");
 const legendPlayersEl = document.getElementById("legend-players");
+const turnCounterEl = document.getElementById("turn-counter");
+const selectionInfoEl = document.getElementById("selection-info");
+const btnMove = document.getElementById("btn-move");
+const btnAttack = document.getElementById("btn-attack");
+const btnCancel = document.getElementById("btn-cancel");
+const btnEndTurn = document.getElementById("btn-end-turn");
 
 let numPlayers = DEFAULT_PLAYERS;
 let viewingPlayer = 1;
@@ -196,10 +238,19 @@ let board = null;
 let cellEls = [];
 let islandEls = [];
 let shipEls = [];
+let orderMarkerEls = [];
+let turnNumber = 1;
+let selectedShipId = null;
+let actionMode = null; // 'move' | 'attack' | null
+let orders = new Map(); // shipId -> {type:'move'|'attack', row, col}
 
 function buildAll() {
   board = buildBoard(numPlayers);
   if (viewingPlayer > numPlayers) viewingPlayer = 1;
+  turnNumber = 1;
+  selectedShipId = null;
+  actionMode = null;
+  orders = new Map();
 
   boardEl.style.setProperty("--cols", board.cols);
   boardEl.style.setProperty("--rows", board.rows);
@@ -217,6 +268,7 @@ function buildAll() {
     el.style.gridRow = `${cell.row + 1} / span 1`;
     el.style.gridColumn = `${cell.col + 1} / span 1`;
     el.setAttribute("role", "gridcell");
+    el.addEventListener("click", () => onCellClick(cell.row, cell.col));
     boardEl.appendChild(el);
     return el;
   });
@@ -253,13 +305,142 @@ function buildAll() {
     label.textContent = ship.type.code;
     el.appendChild(label);
 
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      onShipClick(ship);
+    });
+
     boardEl.appendChild(el);
     return { ship, el };
   });
 
+  orderMarkerEls = [];
+
   renderPlayerCountSwitch();
   renderViewSwitch();
   renderLegend();
+  render();
+}
+
+function onShipClick(ship) {
+  if (selectedShipId && actionMode) {
+    // Un bateau sélectionné vise ce bateau (allié ou ennemi) : on utilise
+    // sa case de référence comme cible/destination.
+    onCellClick(ship.row, ship.col);
+    return;
+  }
+  if (ship.player !== viewingPlayer) return;
+  selectedShipId = ship.id;
+  actionMode = null;
+  render();
+}
+
+function onCellClick(row, col) {
+  if (!selectedShipId || !actionMode) return;
+  const ship = board.ships.find((s) => s.id === selectedShipId);
+  if (!ship || ship.player !== viewingPlayer) return;
+
+  if (actionMode === "move" && isValidMoveOrder(ship, row, col)) {
+    orders.set(ship.id, { type: "move", row, col });
+  } else if (actionMode === "attack" && isValidAttackOrder(ship, row, col)) {
+    orders.set(ship.id, { type: "attack", row, col });
+  } else {
+    return;
+  }
+  actionMode = null;
+  render();
+}
+
+function armMode(mode) {
+  if (!selectedShipId) return;
+  actionMode = actionMode === mode ? null : mode;
+  render();
+}
+
+function clearSelection() {
+  selectedShipId = null;
+  actionMode = null;
+  render();
+}
+
+// Résolution simultanée de fin de tour : les déplacements sont appliqués
+// d'abord (un conflit entre deux bateaux annule les deux déplacements —
+// version simplifiée de la règle "repoussé vers une case libre" du
+// brief), puis les attaques sont résolues contre les positions finales.
+function endTurn() {
+  const shipById = new Map(board.ships.map((s) => [s.id, s]));
+  const moveOrders = [...orders.entries()].filter(([, o]) => o.type === "move");
+  const attackOrders = [...orders.entries()].filter(([, o]) => o.type === "attack");
+
+  const intended = new Map();
+  moveOrders.forEach(([id, o]) => {
+    const ship = shipById.get(id);
+    if (!ship) return;
+    const dRow = o.row - ship.row;
+    const dCol = o.col - ship.col;
+    intended.set(id, {
+      row: o.row,
+      col: o.col,
+      cells: ship.cells.map((c) => ({ row: c.row + dRow, col: c.col + dCol })),
+    });
+  });
+
+  const occupied = new Map();
+  board.ships.forEach((ship) => {
+    if (!intended.has(ship.id)) {
+      ship.cells.forEach((c) => occupied.set(`${c.row},${c.col}`, ship.id));
+    }
+  });
+
+  intended.forEach((data, id) => {
+    const conflict = data.cells.some((c) => {
+      if (isLandCell(c.row, c.col)) return true;
+      const key = `${c.row},${c.col}`;
+      return occupied.has(key) && occupied.get(key) !== id;
+    });
+    if (conflict) {
+      intended.delete(id);
+    } else {
+      data.cells.forEach((c) => occupied.set(`${c.row},${c.col}`, id));
+    }
+  });
+
+  intended.forEach((data, id) => {
+    const ship = shipById.get(id);
+    ship.row = data.row;
+    ship.col = data.col;
+    ship.cells = data.cells;
+  });
+
+  attackOrders.forEach(([id, o]) => {
+    const attacker = shipById.get(id);
+    if (!attacker) return;
+    const target = board.ships.find(
+      (s) => s.player !== attacker.player && s.cells.some((c) => c.row === o.row && c.col === o.col)
+    );
+    if (target) target.hp -= attacker.type.damage;
+  });
+
+  board.ships = board.ships.filter((s) => s.hp > 0);
+  shipEls = shipEls.filter(({ ship, el }) => {
+    if (board.ships.includes(ship)) return true;
+    el.remove();
+    return false;
+  });
+
+  shipEls.forEach(({ ship, el }) => {
+    if (intended.has(ship.id)) repositionShipEl(ship, el);
+  });
+
+  board.shipOwnerMap = new Map();
+  board.ships.forEach((ship) => {
+    ship.cells.forEach((c) => board.shipOwnerMap.set(`${c.row},${c.col}`, ship.player));
+  });
+
+  orders = new Map();
+  selectedShipId = null;
+  actionMode = null;
+  turnNumber += 1;
   render();
 }
 
@@ -279,7 +460,72 @@ function render() {
 
   shipEls.forEach(({ ship, el }) => {
     el.classList.toggle("ship--hidden", ship.player !== viewingPlayer);
+    el.classList.toggle("ship--selected", ship.id === selectedShipId);
+    el.title = shipTooltip(ship);
   });
+
+  renderOrderMarkers();
+  renderTurnBar();
+}
+
+function renderOrderMarkers() {
+  orderMarkerEls.forEach((el) => el.remove());
+  orderMarkerEls = [];
+
+  orders.forEach((order, shipId) => {
+    const ship = board.ships.find((s) => s.id === shipId);
+    if (!ship || ship.player !== viewingPlayer) return;
+
+    const marker = document.createElement("div");
+    marker.style.setProperty("--zone-color", playerColor(ship.player));
+
+    if (order.type === "move") {
+      marker.className = "order-marker order-marker--move";
+      if (ship.orientation === "horizontal") {
+        marker.style.gridRow = `${order.row + 1} / span 1`;
+        marker.style.gridColumn = `${order.col + 1} / span ${ship.type.length}`;
+      } else {
+        marker.style.gridRow = `${order.row + 1} / span ${ship.type.length}`;
+        marker.style.gridColumn = `${order.col + 1} / span 1`;
+      }
+    } else {
+      marker.className = "order-marker order-marker--attack";
+      marker.style.gridRow = `${order.row + 1} / span 1`;
+      marker.style.gridColumn = `${order.col + 1} / span 1`;
+    }
+
+    boardEl.appendChild(marker);
+    orderMarkerEls.push(marker);
+  });
+}
+
+function renderTurnBar() {
+  turnCounterEl.textContent = `Tour ${turnNumber}`;
+  const ship = selectedShipId ? board.ships.find((s) => s.id === selectedShipId) : null;
+
+  if (!ship) {
+    selectionInfoEl.textContent = "Cliquez un de vos bateaux pour lui donner un ordre.";
+    btnMove.hidden = true;
+    btnAttack.hidden = true;
+    btnCancel.hidden = true;
+    return;
+  }
+
+  const order = orders.get(ship.id);
+  const orderText = order ? ` — ordre : ${order.type === "move" ? "déplacement" : "attaque"} en (${order.row}, ${order.col})` : " — aucun ordre";
+  const modeText =
+    actionMode === "move"
+      ? " · cliquez une case de mer à portée pour déplacer"
+      : actionMode === "attack"
+        ? " · cliquez une case à portée pour tirer"
+        : "";
+  selectionInfoEl.textContent = `${ship.type.name} (Joueur ${ship.player}) — PV ${ship.hp}/${ship.type.hp}${orderText}${modeText}`;
+
+  btnMove.hidden = false;
+  btnAttack.hidden = false;
+  btnCancel.hidden = false;
+  btnMove.classList.toggle("active", actionMode === "move");
+  btnAttack.classList.toggle("active", actionMode === "attack");
 }
 
 function renderPlayerCountSwitch() {
@@ -323,10 +569,17 @@ function renderLegend() {
 
 function setViewingPlayer(player) {
   viewingPlayer = player;
+  selectedShipId = null;
+  actionMode = null;
   [...viewSwitchEl.children].forEach((btn, i) => {
     btn.classList.toggle("active", i + 1 === player);
   });
   render();
 }
+
+btnMove.addEventListener("click", () => armMode("move"));
+btnAttack.addEventListener("click", () => armMode("attack"));
+btnCancel.addEventListener("click", clearSelection);
+btnEndTurn.addEventListener("click", endTurn);
 
 buildAll();

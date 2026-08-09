@@ -19,6 +19,19 @@
     </div>
   </header>
 
+  <div id="turn-bar" class="turn-bar">
+    <div class="turn-bar__status">
+      <span id="turn-counter" class="turn-counter">Tour 1</span>
+      <span id="selection-info" class="selection-info"></span>
+    </div>
+    <div class="turn-bar__actions">
+      <button id="btn-move" class="mode-btn" hidden>Déplacer</button>
+      <button id="btn-attack" class="mode-btn" hidden>Attaquer</button>
+      <button id="btn-cancel" class="mode-btn" hidden>Désélectionner</button>
+      <button id="btn-end-turn" class="end-turn-btn">Fin du tour</button>
+    </div>
+  </div>
+
   <main class="board-wrap">
     <div id="board" class="board" role="grid" aria-label="Plateau de jeu"></div>
   </main>

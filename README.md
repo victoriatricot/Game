@@ -28,11 +28,17 @@ python3 -m http.server 8000
   chaque île. Stats (points de vie, déplacement, portée, dégâts, coûts en
   scrap, type de détection) centralisées dans `ships-config.js` — c'est le
   seul fichier à modifier pour rééquilibrer.
+- Tour simultané, version simple pour tester rapidement en hotseat : cliquez
+  un de vos bateaux, choisissez "Déplacer" ou "Attaquer", cliquez une case à
+  portée, puis "Fin du tour" pour résoudre les ordres de tous les joueurs
+  d'un coup (changez de "Vue" pour donner ses ordres à chaque joueur avant de
+  finir le tour). Tir à l'aveugle pour l'instant (pas encore de zone de
+  détection approximative), et un conflit de déplacement entre deux bateaux
+  annule simplement les deux ordres — à raffiner à l'étape combat.
 
 ## Prochaines étapes (à valider une par une)
 
-1. Système de tour simultané : sélection d'une action (déplacement ou
-   attaque) par bateau, résolution en fin de tour.
-2. Combat : détection approximative (avec le cas particulier du sous-marin
-   furtif), tir touché/coulé, gestion des collisions.
-3. Ressources : scrap à la destruction d'un bateau, reconstruction à la base.
+1. Détection approximative (avec le cas particulier du sous-marin furtif) et
+   logique touché/coulé case par case, gestion plus fine des collisions de
+   déplacement (repousser au lieu d'annuler).
+2. Ressources : scrap à la destruction d'un bateau, reconstruction à la base.
