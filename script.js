@@ -110,10 +110,25 @@ let renderedDims = null;
 
 let socket = null;
 
-function connect() {
+/*
+ * Par défaut on parle au serveur qui a servi la page. La version publiée
+ * sur GitHub Pages étant statique, elle n'a pas de serveur de jeu : on
+ * peut alors la pointer vers un serveur hébergé ailleurs (Railway) avec
+ * ?server=mon-appli.up.railway.app
+ */
+function serverUrl() {
+  const param = new URLSearchParams(location.search).get("server");
+  if (param) {
+    if (/^wss?:\/\//.test(param)) return param;
+    return `wss://${param.replace(/^https?:\/\//, "").replace(/\/+$/, "")}`;
+  }
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  return `${proto}//${location.host}`;
+}
+
+function connect() {
   try {
-    socket = new WebSocket(`${proto}//${location.host}`);
+    socket = new WebSocket(serverUrl());
   } catch {
     return showOffline();
   }
@@ -136,7 +151,8 @@ function showOffline() {
     return;
   }
   netStatusEl.textContent =
-    "Pas de serveur de jeu joignable — seule la partie locale est disponible.";
+    "Pas de serveur de jeu joignable — seule la partie locale est disponible. " +
+    "Pour jouer en ligne, ajoutez ?server=votre-serveur à l'adresse.";
   netStatusEl.classList.add("lobby__status--off");
   el("btn-create").disabled = true;
   el("btn-join").disabled = true;

@@ -38,6 +38,22 @@ const MIME = {
 
 const server = http.createServer((req, res) => {
   const urlPath = decodeURIComponent((req.url || "/").split("?")[0]);
+
+  // Sonde de santé pour l'hébergeur (Railway) : répond sans toucher au
+  // disque, et donne un aperçu de la charge en cours.
+  if (urlPath === "/healthz") {
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(
+      JSON.stringify({
+        status: "ok",
+        uptimeSeconds: Math.round(process.uptime()),
+        rooms: rooms.size,
+        players: [...rooms.values()].reduce((n, room) => n + room.players.size, 0),
+      })
+    );
+    return;
+  }
+
   const relative = urlPath === "/" ? "index.html" : urlPath.replace(/^\/+/, "");
   const filePath = path.join(ROOT, relative);
 

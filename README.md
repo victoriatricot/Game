@@ -18,7 +18,7 @@ Pages est un site statique : le multijoueur en ligne y est indisponible
 joueur donne ses ordres à son tour via la bascule « Vue », puis « Fin du
 tour » résout tout simultanément.
 
-## Lancer le serveur
+## Lancer le serveur en local
 
 ```bash
 npm install
@@ -29,6 +29,46 @@ npm start
 Le serveur sert aussi les fichiers statiques, donc une seule commande suffit
 pour avoir le jeu complet en local.
 
+## Déployer le serveur sur Railway
+
+Le dépôt est prêt pour Railway : `railway.json` fixe la commande de
+démarrage et la sonde de santé, et le serveur écoute sur `process.env.PORT`
+comme l'exige la plateforme.
+
+```bash
+npm install -g @railway/cli
+railway login
+railway init      # à lancer depuis ce dossier
+railway up        # build et déploiement
+railway domain    # génère l'URL publique
+```
+
+Le service héberge le jeu **entier** (serveur de partie + fichiers
+statiques) : l'URL renvoyée par `railway domain` suffit pour jouer, rien
+d'autre à configurer.
+
+Vérifier que tout tourne : `https://VOTRE-URL/healthz` doit répondre
+`{"status":"ok",...}`.
+
+### Et la version GitHub Pages ?
+
+GitHub Pages est un hébergeur statique : il ne peut pas faire tourner le
+serveur, donc le multijoueur en ligne y est indisponible par défaut (la
+partie locale, elle, fonctionne). Deux options :
+
+- utiliser directement l'URL Railway, qui sert déjà tout ;
+- ou pointer la version Pages vers le serveur Railway en ajoutant le
+  paramètre `?server=` à l'adresse :
+  `https://victoriatricot.github.io/Game/?server=VOTRE-URL.up.railway.app`
+
+### Base de données
+
+Pas encore nécessaire : les parties vivent en mémoire et une partie perdue
+au redémarrage n'est pas un drame à ce stade. Quand la persistance
+deviendra utile (reprendre une partie, comptes joueurs), `railway add`
+permet d'ajouter un PostgreSQL au projet, et Railway injecte alors
+`DATABASE_URL` dans l'environnement du serveur.
+
 ## Architecture
 
 | Fichier | Rôle |
@@ -36,6 +76,7 @@ pour avoir le jeu complet en local.
 | `ships-config.js` | Stats des 5 types de bateaux. **Seul fichier à modifier pour rééquilibrer.** |
 | `game-core.js` | Logique de jeu pure (plateau, ordres, résolution des tours, brouillard de guerre). Partagée serveur/navigateur, sans dépendance au DOM. |
 | `server/server.js` | Serveur autoritaire : salons, WebSocket, arbitrage des tours. |
+| `railway.json` | Configuration de déploiement Railway. |
 | `script.js` | Client : rendu et interactions. |
 | `index.html`, `style.css` | Interface. |
 
