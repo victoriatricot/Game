@@ -134,6 +134,57 @@
     border-color: var(--accent);
   }
   .pseudo-input::placeholder { color: var(--text-dim); }
+
+  /* --- Leaderboard screen --- */
+  .leaderboard-list {
+    width: 100%;
+    max-width: 340px;
+    list-style: none;
+    margin: 0 0 26px;
+    padding: 0;
+    max-height: 46vh;
+    overflow-y: auto;
+  }
+  .leaderboard-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    text-align: left;
+  }
+  .leaderboard-row.me {
+    border-color: var(--accent);
+    background: rgba(124, 92, 255, 0.18);
+  }
+  .leaderboard-rank {
+    font-weight: 800;
+    color: var(--text-dim);
+    width: 24px;
+    flex-shrink: 0;
+  }
+  .leaderboard-row:nth-child(1) .leaderboard-rank { color: #ffd166; }
+  .leaderboard-row:nth-child(2) .leaderboard-rank { color: #d7d7e0; }
+  .leaderboard-row:nth-child(3) .leaderboard-rank { color: #e2a76f; }
+  .leaderboard-pseudo {
+    flex: 1;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .leaderboard-score {
+    font-weight: 800;
+    color: #ffd166;
+  }
+  .leaderboard-empty {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    margin-bottom: 26px;
+  }
   button {
     font-family: inherit;
     border: none;
@@ -322,7 +373,17 @@
     <p class="greeting">Salut <span id="start-pseudo">—</span> 👋 <button class="link-btn" id="btn-change-pseudo" type="button">changer</button></p>
     <p class="best-score">Ton meilleur score : <span id="start-best">0</span></p>
     <button class="btn-play" id="btn-start">Jouer</button>
+    <button class="link-btn" id="btn-leaderboard" type="button">🏆 Voir le classement</button>
     <p class="hint">Utilise ← pour NON et → pour OUI, ou touche l'écran</p>
+  </section>
+
+  <!-- Leaderboard screen -->
+  <section id="screen-leaderboard" class="screen">
+    <div class="logo">🏆</div>
+    <h1 class="title">Classement</h1>
+    <p class="subtitle">Meilleurs scores sur cet appareil</p>
+    <ol class="leaderboard-list" id="leaderboard-list"></ol>
+    <button class="btn-play" id="btn-leaderboard-back">Retour</button>
   </section>
 
   <!-- Game screen -->
@@ -356,6 +417,7 @@
       <div class="new-best" id="new-best" style="display:none;">🏆 Nouveau meilleur score !</div>
     </div>
     <button class="btn-retry" id="btn-retry">Rejouer</button>
+    <button class="link-btn" id="btn-over-leaderboard" type="button">🏆 Voir le classement</button>
   </section>
 
 </div>
@@ -508,13 +570,18 @@
     pseudo: document.getElementById("screen-pseudo"),
     start: document.getElementById("screen-start"),
     game: document.getElementById("screen-game"),
-    over: document.getElementById("screen-over")
+    over: document.getElementById("screen-over"),
+    leaderboard: document.getElementById("screen-leaderboard")
   };
   var pseudoForm = document.getElementById("pseudo-form");
   var pseudoInput = document.getElementById("pseudo-input");
   var startPseudo = document.getElementById("start-pseudo");
   var btnChangePseudo = document.getElementById("btn-change-pseudo");
   var startBest = document.getElementById("start-best");
+  var btnLeaderboard = document.getElementById("btn-leaderboard");
+  var btnOverLeaderboard = document.getElementById("btn-over-leaderboard");
+  var btnLeaderboardBack = document.getElementById("btn-leaderboard-back");
+  var leaderboardList = document.getElementById("leaderboard-list");
   var gameScore = document.getElementById("game-score");
   var gameBest = document.getElementById("game-best");
   var timerBar = document.getElementById("timer-bar");
@@ -546,6 +613,46 @@
     pseudoInput.value = getPseudo();
     showScreen("pseudo");
     setTimeout(function () { pseudoInput.focus(); }, 50);
+  }
+
+  function renderLeaderboard() {
+    var scores = getScores();
+    var pseudo = getPseudo();
+    var entries = Object.keys(scores).map(function (name) {
+      return { name: name, score: scores[name] };
+    });
+    entries.sort(function (a, b) { return b.score - a.score; });
+
+    leaderboardList.innerHTML = "";
+    if (entries.length === 0) {
+      var empty = document.createElement("p");
+      empty.className = "leaderboard-empty";
+      empty.textContent = "Aucun score enregistre pour l'instant. Joue une partie !";
+      leaderboardList.appendChild(empty);
+      return;
+    }
+    entries.forEach(function (entry, index) {
+      var li = document.createElement("li");
+      li.className = "leaderboard-row" + (entry.name === pseudo ? " me" : "");
+      var rank = document.createElement("span");
+      rank.className = "leaderboard-rank";
+      rank.textContent = "#" + (index + 1);
+      var name = document.createElement("span");
+      name.className = "leaderboard-pseudo";
+      name.textContent = entry.name;
+      var score = document.createElement("span");
+      score.className = "leaderboard-score";
+      score.textContent = entry.score;
+      li.appendChild(rank);
+      li.appendChild(name);
+      li.appendChild(score);
+      leaderboardList.appendChild(li);
+    });
+  }
+
+  function showLeaderboardScreen() {
+    renderLeaderboard();
+    showScreen("leaderboard");
   }
 
   function startGame() {
@@ -657,6 +764,9 @@
     showStartScreen();
   });
   btnChangePseudo.addEventListener("click", showPseudoScreen);
+  btnLeaderboard.addEventListener("click", showLeaderboardScreen);
+  btnOverLeaderboard.addEventListener("click", showLeaderboardScreen);
+  btnLeaderboardBack.addEventListener("click", showStartScreen);
   btnStart.addEventListener("click", startGame);
   btnRetry.addEventListener("click", startGame);
   btnYes.addEventListener("click", function () { handleAnswer(true); });
