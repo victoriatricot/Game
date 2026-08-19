@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Réflex'Mot</title>
+<style>
+  :root {
+    --bg-1: #1a1035;
+    --bg-2: #0d0620;
+    --accent: #7c5cff;
+    --yes: #2ecc71;
+    --no: #ff5c5c;
+    --card: rgba(255,255,255,0.06);
+    --text: #f2f0ff;
+    --text-dim: #b6aed6;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(circle at 50% 0%, var(--bg-1), var(--bg-2));
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  .app {
+    width: 100%;
+    max-width: 480px;
+    height: 100%;
+    max-height: 860px;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+  }
+  .screen {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    animation: fadein 0.25s ease;
+  }
+  .screen.active { display: flex; }
+  @keyframes fadein {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* --- Start screen --- */
+  .logo {
+    font-size: 3rem;
+    margin: 0 0 8px;
+  }
+  .title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin: 0 0 4px;
+    background: linear-gradient(90deg, #a78bfa, #7c5cff, #ff8ce0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    margin: 0 0 20px;
+    font-size: 0.95rem;
+  }
+  .rules-text {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    max-width: 340px;
+    margin: 0 0 28px;
+  }
+  .rules-text b { color: var(--text); }
+  .best-score {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+  .best-score span { color: #ffd166; font-weight: 700; }
+  button {
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-play {
+    background: linear-gradient(135deg, #7c5cff, #ff8ce0);
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 800;
+    padding: 16px 48px;
+    border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(124, 92, 255, 0.45);
+    margin-bottom: 18px;
+    transition: transform 0.1s ease;
+  }
+  .btn-play:active { transform: scale(0.96); }
+  .hint {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+
+  /* --- Game screen --- */
+  .hud {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+  }
+  .hud .score {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--text);
+  }
+  .timer-track {
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 34px;
+  }
+  .timer-bar {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #7c5cff, #ff8ce0);
+    border-radius: 999px;
+    transform-origin: left;
+    transition: background 0.2s ease;
+  }
+  .rule-card {
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 18px 20px;
+    margin-bottom: 34px;
+    width: 100%;
+  }
+  .rule-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .rule-text {
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+  .word {
+    font-size: 3rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    margin-bottom: 40px;
+    word-break: break-word;
+    min-height: 3.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .word.flash-yes { color: var(--yes); animation: pop 0.25s ease; }
+  .word.flash-no { color: var(--no); animation: pop 0.25s ease; }
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+  }
+  .answers {
+    display: flex;
+    gap: 14px;
+    width: 100%;
+  }
+  .answer-btn {
+    flex: 1;
+    padding: 20px 0;
+    border-radius: 18px;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: white;
+    transition: transform 0.08s ease, filter 0.15s ease;
+  }
+  .answer-btn:active { transform: scale(0.95); }
+  .answer-btn.no { background: linear-gradient(135deg, #ff5c5c, #c0392b); }
+  .answer-btn.yes { background: linear-gradient(135deg, #2ecc71, #1e8e4f); }
+  .answer-btn[disabled] { filter: brightness(0.6); }
+  .key-hint {
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  /* --- Game over screen --- */
+  .over-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .over-reason {
+    color: var(--text-dim);
+    margin-bottom: 22px;
+    font-size: 0.95rem;
+  }
+  .score-box {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 20px 32px;
+    margin-bottom: 26px;
+  }
+  .score-box .final-score {
+    font-size: 2.6rem;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  .score-box .label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .new-best {
+    color: #ffd166;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-top: 8px;
+  }
+  .btn-retry {
+    background: linear-gradient(135deg, #7c5cff, #ff8ce0);
+    color: white;
+    font-size: 1.05rem;
+    font-weight: 800;
+    padding: 14px 40px;
+    border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(124, 92, 255, 0.45);
+  }
+  .btn-retry:active { transform: scale(0.96); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Start screen -->
+  <section id="screen-start" class="screen active">
+    <div class="logo">⚡</div>
+    <h1 class="title">Réflex'Mot</h1>
+    <p class="subtitle">Un mot, une règle, réponds vite !</p>
+    <p class="rules-text">
+      Une règle s'affiche (ex : <b>« Contient la lettre A ? »</b>). Un mot apparaît.
+      Réponds <b>OUI</b> ou <b>NON</b> avant la fin du chrono.<br>
+      Plus tu enchaînes de bonnes réponses, plus le jeu accélère !
+    </p>
+    <p class="best-score">Meilleur score : <span id="start-best">0</span></p>
+    <button class="btn-play" id="btn-start">Jouer</button>
+    <p class="hint">Utilise ← pour NON et → pour OUI, ou touche l'écran</p>
+  </section>
+
+  <!-- Game screen -->
+  <section id="screen-game" class="screen">
+    <div class="hud">
+      <span class="score">Score : <span id="game-score">0</span></span>
+      <span>Meilleur : <span id="game-best">0</span></span>
+    </div>
+    <div class="timer-track">
+      <div class="timer-bar" id="timer-bar"></div>
+    </div>
+    <div class="rule-card">
+      <div class="rule-label">Règle</div>
+      <div class="rule-text" id="rule-text">—</div>
+    </div>
+    <div class="word" id="word-text">—</div>
+    <div class="answers">
+      <button class="answer-btn no" id="btn-no">✕ NON</button>
+      <button class="answer-btn yes" id="btn-yes">✓ OUI</button>
+    </div>
+    <div class="key-hint">← NON &nbsp;·&nbsp; OUI →</div>
+  </section>
+
+  <!-- Game over screen -->
+  <section id="screen-over" class="screen">
+    <div class="over-title">Perdu !</div>
+    <div class="over-reason" id="over-reason">Mauvaise réponse</div>
+    <div class="score-box">
+      <div class="final-score" id="final-score">0</div>
+      <div class="label">Bonnes réponses</div>
+      <div class="new-best" id="new-best" style="display:none;">🏆 Nouveau meilleur score !</div>
+    </div>
+    <button class="btn-retry" id="btn-retry">Rejouer</button>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Word list ----------
+  var WORDS = [
+    "chat","chien","maison","table","arbre","voiture","soleil","lune","fleur","montagne",
+    "riviere","ocean","pomme","banane","orange","fraise","citron","raisin","pain","fromage",
+    "livre","stylo","papier","ecole","classe","musique","guitare","piano","tambour","danse",
+    "cinema","theatre","chanson","voyage","valise","avion","train","bateau","velo","route",
+    "jardin","foret","plage","desert","neige","pluie","vent","nuage","orage","tempete",
+    "amour","amitie","famille","enfant","parent","frere","soeur","cousin","voisin","ami",
+    "travail","bureau","usine","magasin","marche","argent","banque","cadeau","fete","anniversaire",
+    "couleur","rouge","bleu","vert","jaune","noir","blanc","violet","rose","gris",
+    "animal","oiseau","poisson","lion","tigre","elephant","souris","cheval","vache","mouton",
+    "cuisine","salon","chambre","fenetre","porte","mur","toit","jardinier","escalier","tapis",
+    "ordinateur","telephone","internet","robot","machine","moteur","roue","lumiere","electricite","energie",
+    "sport","football","tennis","natation","course","victoire","defaite","equipe","joueur","arbitre",
+    "histoire","science","mathematiques","geographie","philosophie","medecine","chimie","physique","biologie","astronomie",
+    "printemps","ete","automne","hiver","matin","midi","soir","nuit","semaine","mois",
+    "montre","horloge","miroir","lampe","chaise","armoire","tiroir","etagere","couverture","oreiller"
+  ];
+
+  var ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
+  var VOWELS = ["a", "e", "i", "o", "u", "y"];
+
+  function normalize(word) {
+    return word.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  }
+
+  // ---------- Rule generators ----------
+  // Each generator returns { text, test(word) } or null if not applicable.
+  var RULE_GENERATORS = [
+    function containsLetter() {
+      var letter = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+      return {
+        text: "Contient la lettre " + letter.toUpperCase() + " ?",
+        test: function (w) { return normalize(w).indexOf(letter) !== -1; }
+      };
+    },
+    function startsWithLetter() {
+      var letter = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+      return {
+        text: "Commence par " + letter.toUpperCase() + " ?",
+        test: function (w) { return normalize(w).charAt(0) === letter; }
+      };
+    },
+    function endsWithLetter() {
+      var letter = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+      return {
+        text: "Se termine par " + letter.toUpperCase() + " ?",
+        test: function (w) { var n = normalize(w); return n.charAt(n.length - 1) === letter; }
+      };
+    },
+    function containsVowel() {
+      var vowel = VOWELS[Math.floor(Math.random() * VOWELS.length)];
+      return {
+        text: "Contient la voyelle " + vowel.toUpperCase() + " ?",
+        test: function (w) { return normalize(w).indexOf(vowel) !== -1; }
+      };
+    },
+    function lengthMoreThan() {
+      var n = 4 + Math.floor(Math.random() * 4); // 4..7
+      return {
+        text: "Contient plus de " + n + " lettres ?",
+        test: function (w) { return w.length > n; }
+      };
+    },
+    function hasDoubleLetter() {
+      return {
+        text: "Contient une lettre doublee (ex: mm, ss) ?",
+        test: function (w) {
+          var n = normalize(w);
+          for (var i = 0; i < n.length - 1; i++) {
+            if (n[i] === n[i + 1]) return true;
+          }
+          return false;
+        }
+      };
+    }
+  ];
+
+  function generateRound() {
+    for (var attempt = 0; attempt < 25; attempt++) {
+      var gen = RULE_GENERATORS[Math.floor(Math.random() * RULE_GENERATORS.length)];
+      var rule = gen();
+      var trueWords = [];
+      var falseWords = [];
+      for (var i = 0; i < WORDS.length; i++) {
+        if (rule.test(WORDS[i])) trueWords.push(WORDS[i]);
+        else falseWords.push(WORDS[i]);
+      }
+      if (trueWords.length > 0 && falseWords.length > 0) {
+        var wantYes = Math.random() < 0.5;
+        var pool = wantYes ? trueWords : falseWords;
+        var word = pool[Math.floor(Math.random() * pool.length)];
+        return { ruleText: rule.text, word: word, answer: wantYes };
+      }
+    }
+    // Fallback (should not happen given the word list): always-splitting rule
+    var word = WORDS[Math.floor(Math.random() * WORDS.length)];
+    return { ruleText: "Contient plus de 4 lettres ?", word: word, answer: word.length > 4 };
+  }
+
+  // ---------- Game state ----------
+  var BEST_KEY = "reflexmot_best_score";
+  var INITIAL_TIME = 2800;
+  var MIN_TIME = 900;
+  var SPEEDUP_FACTOR = 0.94;
+
+  var state = {
+    score: 0,
+    timeLimit: INITIAL_TIME,
+    round: null,
+    timerStart: 0,
+    rafId: null,
+    timeoutId: null,
+    locked: false
+  };
+
+  function getBest() {
+    return parseInt(localStorage.getItem(BEST_KEY) || "0", 10);
+  }
+  function setBest(val) {
+    localStorage.setItem(BEST_KEY, String(val));
+  }
+
+  // ---------- DOM refs ----------
+  var screens = {
+    start: document.getElementById("screen-start"),
+    game: document.getElementById("screen-game"),
+    over: document.getElementById("screen-over")
+  };
+  var startBest = document.getElementById("start-best");
+  var gameScore = document.getElementById("game-score");
+  var gameBest = document.getElementById("game-best");
+  var timerBar = document.getElementById("timer-bar");
+  var ruleTextEl = document.getElementById("rule-text");
+  var wordTextEl = document.getElementById("word-text");
+  var btnYes = document.getElementById("btn-yes");
+  var btnNo = document.getElementById("btn-no");
+  var btnStart = document.getElementById("btn-start");
+  var btnRetry = document.getElementById("btn-retry");
+  var overReason = document.getElementById("over-reason");
+  var finalScore = document.getElementById("final-score");
+  var newBest = document.getElementById("new-best");
+
+  function showScreen(name) {
+    Object.keys(screens).forEach(function (key) {
+      screens[key].classList.toggle("active", key === name);
+    });
+  }
+
+  // ---------- Game flow ----------
+  function startGame() {
+    state.score = 0;
+    state.timeLimit = INITIAL_TIME;
+    gameScore.textContent = "0";
+    gameBest.textContent = String(getBest());
+    showScreen("game");
+    nextRound();
+  }
+
+  function nextRound() {
+    state.locked = false;
+    btnYes.disabled = false;
+    btnNo.disabled = false;
+    wordTextEl.classList.remove("flash-yes", "flash-no");
+
+    state.round = generateRound();
+    ruleTextEl.textContent = state.round.ruleText;
+    wordTextEl.textContent = state.round.word;
+
+    startTimer();
+  }
+
+  function startTimer() {
+    cancelAnimationFrame(state.rafId);
+    clearTimeout(state.timeoutId);
+
+    state.timerStart = performance.now();
+    var duration = state.timeLimit;
+
+    function tick(now) {
+      var elapsed = now - state.timerStart;
+      var ratio = Math.max(0, 1 - elapsed / duration);
+      timerBar.style.transform = "scaleX(" + ratio + ")";
+      if (ratio > 0.5) {
+        timerBar.style.background = "linear-gradient(90deg, #7c5cff, #ff8ce0)";
+      } else if (ratio > 0.2) {
+        timerBar.style.background = "linear-gradient(90deg, #ffd166, #ff8c42)";
+      } else {
+        timerBar.style.background = "linear-gradient(90deg, #ff5c5c, #c0392b)";
+      }
+      if (ratio > 0 && !state.locked) {
+        state.rafId = requestAnimationFrame(tick);
+      }
+    }
+    state.rafId = requestAnimationFrame(tick);
+
+    state.timeoutId = setTimeout(function () {
+      if (!state.locked) handleTimeout();
+    }, duration);
+  }
+
+  function handleAnswer(playerSaysYes) {
+    if (state.locked) return;
+    state.locked = true;
+    cancelAnimationFrame(state.rafId);
+    clearTimeout(state.timeoutId);
+    btnYes.disabled = true;
+    btnNo.disabled = true;
+
+    var correct = playerSaysYes === state.round.answer;
+    wordTextEl.classList.add(correct ? "flash-yes" : "flash-no");
+
+    if (correct) {
+      state.score++;
+      gameScore.textContent = String(state.score);
+      state.timeLimit = Math.max(MIN_TIME, state.timeLimit * SPEEDUP_FACTOR);
+      setTimeout(nextRound, 260);
+    } else {
+      setTimeout(function () { endGame("Mauvaise reponse"); }, 320);
+    }
+  }
+
+  function handleTimeout() {
+    if (state.locked) return;
+    state.locked = true;
+    btnYes.disabled = true;
+    btnNo.disabled = true;
+    wordTextEl.classList.add("flash-no");
+    setTimeout(function () { endGame("Temps ecoule"); }, 260);
+  }
+
+  function endGame(reason) {
+    overReason.textContent = reason;
+    finalScore.textContent = String(state.score);
+
+    var best = getBest();
+    if (state.score > best) {
+      setBest(state.score);
+      newBest.style.display = "block";
+    } else {
+      newBest.style.display = "none";
+    }
+    startBest.textContent = String(getBest());
+
+    showScreen("over");
+  }
+
+  // ---------- Input handling ----------
+  btnStart.addEventListener("click", startGame);
+  btnRetry.addEventListener("click", startGame);
+  btnYes.addEventListener("click", function () { handleAnswer(true); });
+  btnNo.addEventListener("click", function () { handleAnswer(false); });
+
+  document.addEventListener("keydown", function (e) {
+    if (screens.game.classList.contains("active")) {
+      if (e.key === "ArrowRight") { e.preventDefault(); handleAnswer(true); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); handleAnswer(false); }
+    } else if (screens.start.classList.contains("active")) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); startGame(); }
+    } else if (screens.over.classList.contains("active")) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); startGame(); }
+    }
+  });
+
+  // ---------- Init ----------
+  startBest.textContent = String(getBest());
+})();
+</script>
+</body>
+</html>
