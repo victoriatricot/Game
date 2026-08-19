@@ -89,6 +89,51 @@
     margin-bottom: 20px;
   }
   .best-score span { color: #ffd166; font-weight: 700; }
+  .greeting {
+    font-size: 0.95rem;
+    color: var(--text);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .greeting span { font-weight: 700; }
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 0.8rem;
+    text-decoration: underline;
+    padding: 2px 4px;
+    cursor: pointer;
+  }
+  .pseudo-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    max-width: 280px;
+    margin-bottom: 22px;
+  }
+  .pseudo-input {
+    width: 100%;
+    font-family: inherit;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 999px;
+    padding: 14px 20px;
+  }
+  .pseudo-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .pseudo-input::placeholder { color: var(--text-dim); }
   button {
     font-family: inherit;
     border: none;
@@ -252,8 +297,20 @@
 <body>
 <div class="app">
 
+  <!-- Pseudo screen -->
+  <section id="screen-pseudo" class="screen active">
+    <div class="logo">⚡</div>
+    <h1 class="title">Réflex'Mot</h1>
+    <p class="subtitle">Comment veux-tu qu'on t'appelle ?</p>
+    <form id="pseudo-form" class="pseudo-form">
+      <input type="text" id="pseudo-input" class="pseudo-input" placeholder="Ton pseudo" maxlength="16" autocomplete="off">
+      <button type="submit" class="btn-play">Continuer</button>
+    </form>
+    <p class="hint">Ton pseudo est gardé sur cet appareil pour retrouver ton meilleur score</p>
+  </section>
+
   <!-- Start screen -->
-  <section id="screen-start" class="screen active">
+  <section id="screen-start" class="screen">
     <div class="logo">⚡</div>
     <h1 class="title">Réflex'Mot</h1>
     <p class="subtitle">Un mot, une règle, réponds vite !</p>
@@ -262,7 +319,8 @@
       Réponds <b>OUI</b> ou <b>NON</b> avant la fin du chrono.<br>
       Plus tu enchaînes de bonnes réponses, plus le jeu accélère !
     </p>
-    <p class="best-score">Meilleur score : <span id="start-best">0</span></p>
+    <p class="greeting">Salut <span id="start-pseudo">—</span> 👋 <button class="link-btn" id="btn-change-pseudo" type="button">changer</button></p>
+    <p class="best-score">Ton meilleur score : <span id="start-best">0</span></p>
     <button class="btn-play" id="btn-start">Jouer</button>
     <p class="hint">Utilise ← pour NON et → pour OUI, ou touche l'écran</p>
   </section>
@@ -407,7 +465,8 @@
   }
 
   // ---------- Game state ----------
-  var BEST_KEY = "reflexmot_best_score";
+  var PSEUDO_KEY = "reflexmot_pseudo";
+  var SCORES_KEY = "reflexmot_scores";
   var INITIAL_TIME = 2800;
   var MIN_TIME = 900;
   var SPEEDUP_FACTOR = 0.94;
@@ -422,19 +481,39 @@
     locked: false
   };
 
-  function getBest() {
-    return parseInt(localStorage.getItem(BEST_KEY) || "0", 10);
+  function getPseudo() {
+    return localStorage.getItem(PSEUDO_KEY) || "";
   }
-  function setBest(val) {
-    localStorage.setItem(BEST_KEY, String(val));
+  function setPseudo(name) {
+    localStorage.setItem(PSEUDO_KEY, name);
+  }
+  function getScores() {
+    try {
+      return JSON.parse(localStorage.getItem(SCORES_KEY) || "{}");
+    } catch (e) {
+      return {};
+    }
+  }
+  function getBestFor(pseudo) {
+    return getScores()[pseudo] || 0;
+  }
+  function setBestFor(pseudo, val) {
+    var scores = getScores();
+    scores[pseudo] = val;
+    localStorage.setItem(SCORES_KEY, JSON.stringify(scores));
   }
 
   // ---------- DOM refs ----------
   var screens = {
+    pseudo: document.getElementById("screen-pseudo"),
     start: document.getElementById("screen-start"),
     game: document.getElementById("screen-game"),
     over: document.getElementById("screen-over")
   };
+  var pseudoForm = document.getElementById("pseudo-form");
+  var pseudoInput = document.getElementById("pseudo-input");
+  var startPseudo = document.getElementById("start-pseudo");
+  var btnChangePseudo = document.getElementById("btn-change-pseudo");
   var startBest = document.getElementById("start-best");
   var gameScore = document.getElementById("game-score");
   var gameBest = document.getElementById("game-best");
@@ -456,11 +535,24 @@
   }
 
   // ---------- Game flow ----------
+  function showStartScreen() {
+    var pseudo = getPseudo();
+    startPseudo.textContent = pseudo;
+    startBest.textContent = String(getBestFor(pseudo));
+    showScreen("start");
+  }
+
+  function showPseudoScreen() {
+    pseudoInput.value = getPseudo();
+    showScreen("pseudo");
+    setTimeout(function () { pseudoInput.focus(); }, 50);
+  }
+
   function startGame() {
     state.score = 0;
     state.timeLimit = INITIAL_TIME;
     gameScore.textContent = "0";
-    gameBest.textContent = String(getBest());
+    gameBest.textContent = String(getBestFor(getPseudo()));
     showScreen("game");
     nextRound();
   }
@@ -541,19 +633,30 @@
     overReason.textContent = reason;
     finalScore.textContent = String(state.score);
 
-    var best = getBest();
+    var pseudo = getPseudo();
+    var best = getBestFor(pseudo);
     if (state.score > best) {
-      setBest(state.score);
+      setBestFor(pseudo, state.score);
       newBest.style.display = "block";
     } else {
       newBest.style.display = "none";
     }
-    startBest.textContent = String(getBest());
 
     showScreen("over");
   }
 
   // ---------- Input handling ----------
+  pseudoForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = pseudoInput.value.trim();
+    if (!name) {
+      pseudoInput.focus();
+      return;
+    }
+    setPseudo(name);
+    showStartScreen();
+  });
+  btnChangePseudo.addEventListener("click", showPseudoScreen);
   btnStart.addEventListener("click", startGame);
   btnRetry.addEventListener("click", startGame);
   btnYes.addEventListener("click", function () { handleAnswer(true); });
@@ -571,7 +674,11 @@
   });
 
   // ---------- Init ----------
-  startBest.textContent = String(getBest());
+  if (getPseudo()) {
+    showStartScreen();
+  } else {
+    showPseudoScreen();
+  }
 })();
 </script>
 </body>
