@@ -1,0 +1,146 @@
+[
+  {
+    "id": "j-001",
+    "text": "Qu'est-ce qui est jaune et qui attend ? Jonathan.",
+    "author": "Papa Michel",
+    "theme": "Blagues classiques",
+    "votes": {
+      "up": 8,
+      "down": 1
+    },
+    "voters": {},
+    "createdAt": "2026-06-01T09:00:00.000Z"
+  },
+  {
+    "id": "j-002",
+    "text": "Pourquoi les plongeurs plongent-ils toujours en arrière et jamais en avant ? Parce que sinon ils tombent dans le bateau.",
+    "author": "Tonton Bernard",
+    "theme": "Blagues classiques",
+    "votes": {
+      "up": 6,
+      "down": 0
+    },
+    "voters": {},
+    "createdAt": "2026-06-02T10:00:00.000Z"
+  },
+  {
+    "id": "j-003",
+    "text": "J'ai retourné mon steak sur le barbecue. Il m'a dit merci, ça sentait le cramé de son autre côté.",
+    "author": "Papy Roger",
+    "theme": "Blagues de barbecue",
+    "votes": {
+      "up": 5,
+      "down": 2
+    },
+    "voters": {},
+    "createdAt": "2026-06-03T11:00:00.000Z"
+  },
+  {
+    "id": "j-004",
+    "text": "Mon chef m'a demandé de faire un rapport à froid. Je lui ai apporté avec des glaçons.",
+    "author": "Daron du service compta",
+    "theme": "Blagues de bureau",
+    "votes": {
+      "up": 1,
+      "down": 6
+    },
+    "voters": {},
+    "createdAt": "2026-06-04T12:00:00.000Z"
+  },
+  {
+    "id": "j-005",
+    "text": "Je suis allé acheter du camouflage militaire mais je l'ai pas trouvé.",
+    "author": "Anonyme",
+    "theme": "Blagues classiques",
+    "votes": {
+      "up": 2,
+      "down": 5
+    },
+    "voters": {},
+    "createdAt": "2026-06-05T13:00:00.000Z"
+  },
+  {
+    "id": "j-006",
+    "text": "Avec mon marteau, je ne loupe jamais un clou. Enfin presque, demandez à mon pouce.",
+    "author": "Papa Michel",
+    "theme": "Blagues de bricolage",
+    "votes": {
+      "up": 2,
+      "down": 1
+    },
+    "voters": {},
+    "createdAt": "2026-06-10T09:00:00.000Z"
+  },
+  {
+    "id": "j-007",
+    "text": "Cet été je suis allé à la plage et j'ai vu la mer pour la première fois. Enfin... la mer m'a vu aussi, ça compte double.",
+    "author": "Tonton Bernard",
+    "theme": "Blagues de vacances",
+    "votes": {
+      "up": 0,
+      "down": 0
+    },
+    "voters": {},
+    "createdAt": "2026-07-01T09:00:00.000Z"
+  },
+  {
+    "id": "j-008",
+    "text": "Le Père Noël m'a demandé ce que je voulais. J'ai dit la paix dans le monde. Il a noté « chaussettes ».",
+    "author": "Papy Roger",
+    "theme": "Blagues de Noël",
+    "votes": {
+      "up": 3,
+      "down": 1
+    },
+    "voters": {},
+    "createdAt": "2026-07-05T09:00:00.000Z"
+  },
+  {
+    "id": "j-009",
+    "text": "Quel est le sport le plus silencieux ? Le para-chuuuut.",
+    "author": "Anonyme",
+    "theme": "Jeux de mots",
+    "votes": {
+      "up": 4,
+      "down": 0
+    },
+    "voters": {},
+    "createdAt": "2026-07-10T09:00:00.000Z"
+  },
+  {
+    "id": "j-010",
+    "text": "Ma femme dit que je confonds toujours mes rôles au travail. Je lui ai répondu : ça dépend des cas.",
+    "author": "Daron du service compta",
+    "theme": "Blagues de bureau",
+    "votes": {
+      "up": 1,
+      "down": 1
+    },
+    "voters": {},
+    "createdAt": "2026-07-15T09:00:00.000Z"
+  },
+  {
+    "id": "j-011",
+    "text": "J'ai poncé toute la matinée. Résultat : un garage propre et deux bras en bois.",
+    "author": "Papa Michel",
+    "theme": "Blagues de bricolage",
+    "votes": {
+      "up": 7,
+      "down": 2
+    },
+    "voters": {},
+    "createdAt": "2026-07-20T09:00:00.000Z"
+  },
+  {
+    "id": "j-012",
+    "text": "Le sapin de Noël n'a jamais froid, il a toujours ses aiguilles sur lui.",
+    "author": "Tonton Bernard",
+    "theme": "Blagues de Noël",
+    "votes": {
+      "up": 6,
+      "down": 1
+    },
+    "voters": {},
+    "createdAt": "2026-07-25T09:00:00.000Z"
+  }
+]

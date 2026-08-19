@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blagues de Darons</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🃏</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero">
+    <h1>🃏 Blagues de Darons</h1>
+    <p class="tagline">Le recueil officiel des vannes qui font lever les yeux au ciel.</p>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="ranked">🏆 Classement</button>
+    <button class="tab" data-tab="pending">🗳️ En vote</button>
+    <button class="tab" data-tab="rejected">🪦 Recalées</button>
+    <button class="tab tab-add" data-tab="add">➕ Ajouter une blague</button>
+  </nav>
+
+  <main>
+    <section class="theme-filter" id="theme-filter">
+      <span class="theme-filter-label">Thème :</span>
+      <div class="theme-chips" id="theme-chips"></div>
+    </section>
+
+    <section id="panel-ranked" class="panel active">
+      <p class="panel-intro">Les blagues qui ont convaincu la communauté (score positif après au moins 5 votes).</p>
+      <ol class="joke-list" id="list-ranked"></ol>
+    </section>
+
+    <section id="panel-pending" class="panel">
+      <p class="panel-intro">Ces blagues doivent encore récolter des votes avant de savoir si elles méritent leur place au classement.</p>
+      <ul class="joke-list" id="list-pending"></ul>
+    </section>
+
+    <section id="panel-rejected" class="panel">
+      <p class="panel-intro">Verdict du public : ça ne passe pas. Vous pouvez continuer à voter, le verdict est toujours réévalué.</p>
+      <ul class="joke-list" id="list-rejected"></ul>
+    </section>
+
+    <section id="panel-add" class="panel">
+      <form id="add-form" class="add-form">
+        <label for="joke-text">Ta blague de daron</label>
+        <textarea id="joke-text" maxlength="500" rows="4" placeholder="Pourquoi les poules n'ont pas de nez ?..." required></textarea>
+
+        <label for="joke-theme">Thème</label>
+        <select id="joke-theme"></select>
+        <input id="joke-theme-custom" type="text" maxlength="40" placeholder="Nouveau thème (si « Autre… »)" hidden>
+
+        <label for="joke-author">Ton nom de daron (optionnel)</label>
+        <input id="joke-author" type="text" maxlength="40" placeholder="Anonyme">
+
+        <button type="submit">Envoyer la blague au vote</button>
+        <p class="form-status" id="form-status"></p>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <p>Une blague entre au classement dès qu'elle a récolté 5 votes avec un score positif. Sinon, direction le cimetière des vannes.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

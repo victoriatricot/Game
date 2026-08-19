@@ -2,6 +2,10 @@
 
 Jeu de bataille navale multijoueur à tours simultanés.
 
+> Autre projet dans ce dépôt : [`blagues-de-darons/`](./blagues-de-darons) —
+> recueil communautaire de blagues de darons (thèmes, ajout, vote et
+> classement). Voir son propre README pour le lancer.
+
 ## Jouer
 
 ### En ligne (multijoueur)
