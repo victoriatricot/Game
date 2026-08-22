@@ -212,7 +212,7 @@
     width: 100%;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 18px;
     font-size: 0.9rem;
     color: var(--text-dim);
@@ -221,6 +221,40 @@
     font-size: 1.2rem;
     font-weight: 800;
     color: var(--text);
+  }
+  .hud-left { text-align: left; }
+  .hud-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+  .hud-sub { font-size: 0.75rem; color: var(--text-dim); }
+  .combo-badge {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-dim);
+    transition: color 0.2s ease;
+  }
+  .combo-badge.hot {
+    color: #ffd166;
+    text-shadow: 0 0 14px rgba(255, 209, 102, 0.6);
+  }
+  .combo-badge.bump { animation: bump 0.35s ease; }
+  @keyframes bump {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.45); }
+    100% { transform: scale(1); }
+  }
+  .lives { font-size: 0.9rem; letter-spacing: 3px; }
+  .life {
+    display: inline-block;
+    transition: opacity 0.3s ease, transform 0.3s ease, filter 0.3s ease;
+  }
+  .life.lost {
+    opacity: 0.25;
+    transform: scale(0.75);
+    filter: grayscale(1);
   }
   .timer-track {
     width: 100%;
@@ -258,6 +292,7 @@
     font-weight: 700;
   }
   .word {
+    position: relative;
     font-size: 3rem;
     font-weight: 800;
     letter-spacing: 0.02em;
@@ -267,6 +302,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  /* Positioned in fixed coordinates so the next word rendering can't wipe it. */
+  .points-pop {
+    position: fixed;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #ffd166;
+    pointer-events: none;
+    z-index: 10;
+    animation: floatUp 0.6s ease forwards;
+  }
+  @keyframes floatUp {
+    from { opacity: 1; transform: translate(-100%, 0); }
+    to { opacity: 0; transform: translate(-100%, -48px); }
   }
   .word.flash-yes { color: var(--yes); animation: pop 0.25s ease; }
   .word.flash-no { color: var(--no); animation: pop 0.25s ease; }
@@ -327,6 +376,22 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
+  .over-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+  .over-stats b { color: var(--text); }
+  .over-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 16px;
+    margin-top: 12px;
+  }
   .new-best {
     color: #ffd166;
     font-weight: 700;
@@ -373,7 +438,11 @@
     <p class="greeting">Salut <span id="start-pseudo">—</span> 👋 <button class="link-btn" id="btn-change-pseudo" type="button">changer</button></p>
     <p class="best-score">Ton meilleur score : <span id="start-best">0</span></p>
     <button class="btn-play" id="btn-start">Jouer</button>
-    <button class="link-btn" id="btn-leaderboard" type="button">🏆 Voir le classement</button>
+    <div class="over-links">
+      <button class="link-btn" id="btn-leaderboard" type="button">🏆 Voir le classement</button>
+      <button class="link-btn" id="btn-sound" type="button">🔊 Sons activés</button>
+    </div>
+    <p class="hint">3 vies · enchaîne les bonnes réponses pour faire monter le combo</p>
     <p class="hint">Utilise ← pour NON et → pour OUI, ou touche l'écran</p>
   </section>
 
@@ -389,8 +458,14 @@
   <!-- Game screen -->
   <section id="screen-game" class="screen">
     <div class="hud">
-      <span class="score">Score : <span id="game-score">0</span></span>
-      <span>Meilleur : <span id="game-best">0</span></span>
+      <div class="hud-left">
+        <div class="score">Score : <span id="game-score">0</span></div>
+        <div class="hud-sub">Record : <span id="game-best">0</span></div>
+      </div>
+      <div class="hud-right">
+        <div class="combo-badge" id="combo-badge">x1</div>
+        <div class="lives" id="lives-display"></div>
+      </div>
     </div>
     <div class="timer-track">
       <div class="timer-bar" id="timer-bar"></div>
@@ -413,11 +488,18 @@
     <div class="over-reason" id="over-reason">Mauvaise réponse</div>
     <div class="score-box">
       <div class="final-score" id="final-score">0</div>
-      <div class="label">Bonnes réponses</div>
+      <div class="label">Points</div>
+      <div class="over-stats">
+        <span>✅ <b id="final-correct">0</b> bonnes réponses</span>
+        <span>🔥 Combo max <b id="final-combo">x1</b></span>
+      </div>
       <div class="new-best" id="new-best" style="display:none;">🏆 Nouveau meilleur score !</div>
     </div>
     <button class="btn-retry" id="btn-retry">Rejouer</button>
-    <button class="link-btn" id="btn-over-leaderboard" type="button">🏆 Voir le classement</button>
+    <div class="over-links">
+      <button class="link-btn" id="btn-share" type="button">📋 Partager mon score</button>
+      <button class="link-btn" id="btn-over-leaderboard" type="button">🏆 Voir le classement</button>
+    </div>
   </section>
 
 </div>
@@ -492,7 +574,7 @@
     },
     function hasDoubleLetter() {
       return {
-        text: "Contient une lettre doublee (ex: mm, ss) ?",
+        text: "Contient une lettre doublée (ex : mm, ss) ?",
         test: function (w) {
           var n = normalize(w);
           for (var i = 0; i < n.length - 1; i++) {
@@ -529,12 +611,20 @@
   // ---------- Game state ----------
   var PSEUDO_KEY = "reflexmot_pseudo";
   var SCORES_KEY = "reflexmot_scores";
+  var SOUND_KEY = "reflexmot_sound";
   var INITIAL_TIME = 2800;
   var MIN_TIME = 900;
   var SPEEDUP_FACTOR = 0.94;
+  var MAX_LIVES = 3;
+  var COMBO_STEP = 5;   // bonnes réponses par palier de multiplicateur
+  var MAX_MULTIPLIER = 5;
 
   var state = {
     score: 0,
+    correct: 0,
+    combo: 0,
+    bestCombo: 0,
+    lives: MAX_LIVES,
     timeLimit: INITIAL_TIME,
     round: null,
     timerStart: 0,
@@ -542,6 +632,10 @@
     timeoutId: null,
     locked: false
   };
+
+  function multiplierFor(combo) {
+    return Math.min(MAX_MULTIPLIER, 1 + Math.floor(combo / COMBO_STEP));
+  }
 
   function getPseudo() {
     return localStorage.getItem(PSEUDO_KEY) || "";
@@ -565,6 +659,78 @@
     localStorage.setItem(SCORES_KEY, JSON.stringify(scores));
   }
 
+  // ---------- Sound & haptics ----------
+  var audioCtx = null;
+
+  function soundOn() {
+    return localStorage.getItem(SOUND_KEY) !== "off";
+  }
+  function setSoundOn(on) {
+    localStorage.setItem(SOUND_KEY, on ? "on" : "off");
+  }
+
+  // Must be called from a user gesture: browsers block audio started otherwise.
+  function initAudio() {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      if (!audioCtx) audioCtx = new Ctx();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    } catch (e) {
+      audioCtx = null;
+    }
+  }
+
+  function tone(freqFrom, freqTo, duration, type, volume, delay) {
+    if (!soundOn() || !audioCtx) return;
+    try {
+      var start = audioCtx.currentTime + (delay || 0);
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = type || "sine";
+      osc.frequency.setValueAtTime(freqFrom, start);
+      if (freqTo !== freqFrom) {
+        osc.frequency.exponentialRampToValueAtTime(freqTo, start + duration);
+      }
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(volume || 0.16, start + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(start);
+      osc.stop(start + duration + 0.03);
+    } catch (e) { /* audio is a nice-to-have, never break the game for it */ }
+  }
+
+  function vibrate(pattern) {
+    if (!soundOn()) return;
+    if (navigator.vibrate) {
+      try { navigator.vibrate(pattern); } catch (e) { /* ignore */ }
+    }
+  }
+
+  function soundCorrect(multiplier) {
+    // Pitch climbs with the multiplier so a long streak sounds better and better.
+    var base = 540 + (multiplier - 1) * 90;
+    tone(base, base * 1.5, 0.11, "triangle", 0.16);
+    vibrate(12);
+  }
+  function soundComboUp() {
+    tone(700, 700, 0.07, "square", 0.12);
+    tone(1050, 1050, 0.09, "square", 0.12, 0.08);
+    vibrate([14, 40, 14]);
+  }
+  function soundWrong() {
+    tone(220, 110, 0.3, "sawtooth", 0.14);
+    vibrate([45, 55, 90]);
+  }
+  function soundGameOver() {
+    tone(400, 380, 0.16, "triangle", 0.15);
+    tone(300, 285, 0.18, "triangle", 0.15, 0.16);
+    tone(200, 150, 0.4, "triangle", 0.16, 0.33);
+    vibrate([90, 60, 160]);
+  }
+
   // ---------- DOM refs ----------
   var screens = {
     pseudo: document.getElementById("screen-pseudo"),
@@ -582,6 +748,12 @@
   var btnOverLeaderboard = document.getElementById("btn-over-leaderboard");
   var btnLeaderboardBack = document.getElementById("btn-leaderboard-back");
   var leaderboardList = document.getElementById("leaderboard-list");
+  var btnSound = document.getElementById("btn-sound");
+  var btnShare = document.getElementById("btn-share");
+  var comboBadge = document.getElementById("combo-badge");
+  var livesDisplay = document.getElementById("lives-display");
+  var finalCorrect = document.getElementById("final-correct");
+  var finalCombo = document.getElementById("final-combo");
   var gameScore = document.getElementById("game-score");
   var gameBest = document.getElementById("game-best");
   var timerBar = document.getElementById("timer-bar");
@@ -627,7 +799,7 @@
     if (entries.length === 0) {
       var empty = document.createElement("p");
       empty.className = "leaderboard-empty";
-      empty.textContent = "Aucun score enregistre pour l'instant. Joue une partie !";
+      empty.textContent = "Aucun score enregistré pour l'instant. Joue une partie !";
       leaderboardList.appendChild(empty);
       return;
     }
@@ -655,11 +827,52 @@
     showScreen("leaderboard");
   }
 
+  function renderLives() {
+    livesDisplay.innerHTML = "";
+    for (var i = 0; i < MAX_LIVES; i++) {
+      var heart = document.createElement("span");
+      heart.className = "life" + (i < state.lives ? "" : " lost");
+      heart.textContent = "❤️";
+      livesDisplay.appendChild(heart);
+    }
+  }
+
+  function renderCombo(bump) {
+    var mult = multiplierFor(state.combo);
+    comboBadge.textContent = "x" + mult;
+    comboBadge.classList.toggle("hot", mult > 1);
+    if (bump) {
+      comboBadge.classList.remove("bump");
+      void comboBadge.offsetWidth; // restart the CSS animation
+      comboBadge.classList.add("bump");
+    }
+  }
+
+  function popPoints(amount) {
+    var rect = wordTextEl.getBoundingClientRect();
+    var pop = document.createElement("span");
+    pop.className = "points-pop";
+    pop.textContent = "+" + amount;
+    pop.style.left = rect.right + "px";
+    pop.style.top = rect.top + "px";
+    document.body.appendChild(pop);
+    setTimeout(function () {
+      if (pop.parentNode) pop.parentNode.removeChild(pop);
+    }, 640);
+  }
+
   function startGame() {
+    initAudio();
     state.score = 0;
+    state.correct = 0;
+    state.combo = 0;
+    state.bestCombo = 0;
+    state.lives = MAX_LIVES;
     state.timeLimit = INITIAL_TIME;
     gameScore.textContent = "0";
     gameBest.textContent = String(getBestFor(getPseudo()));
+    renderLives();
+    renderCombo(false);
     showScreen("game");
     nextRound();
   }
@@ -718,27 +931,63 @@
     wordTextEl.classList.add(correct ? "flash-yes" : "flash-no");
 
     if (correct) {
-      state.score++;
-      gameScore.textContent = String(state.score);
-      state.timeLimit = Math.max(MIN_TIME, state.timeLimit * SPEEDUP_FACTOR);
-      setTimeout(nextRound, 260);
+      registerCorrect();
     } else {
-      setTimeout(function () { endGame("Mauvaise reponse"); }, 320);
+      loseLife("Mauvaise réponse");
+    }
+  }
+
+  function registerCorrect() {
+    var multBefore = multiplierFor(state.combo);
+    state.combo++;
+    state.correct++;
+    if (state.combo > state.bestCombo) state.bestCombo = state.combo;
+
+    var mult = multiplierFor(state.combo);
+    state.score += mult;
+    gameScore.textContent = String(state.score);
+
+    popPoints(mult);
+    renderCombo(mult > multBefore);
+    if (mult > multBefore) soundComboUp();
+    else soundCorrect(mult);
+
+    state.timeLimit = Math.max(MIN_TIME, state.timeLimit * SPEEDUP_FACTOR);
+    setTimeout(nextRound, 300);
+  }
+
+  function loseLife(reason) {
+    state.lives--;
+    state.combo = 0;
+    renderLives();
+    renderCombo(false);
+
+    if (state.lives <= 0) {
+      soundGameOver();
+      setTimeout(function () { endGame(reason + " — plus de vies !"); }, 420);
+    } else {
+      soundWrong();
+      // Slightly longer pause so the player registers the mistake before moving on.
+      setTimeout(nextRound, 700);
     }
   }
 
   function handleTimeout() {
     if (state.locked) return;
     state.locked = true;
+    cancelAnimationFrame(state.rafId);
     btnYes.disabled = true;
     btnNo.disabled = true;
     wordTextEl.classList.add("flash-no");
-    setTimeout(function () { endGame("Temps ecoule"); }, 260);
+    loseLife("Temps écoulé");
   }
 
   function endGame(reason) {
     overReason.textContent = reason;
     finalScore.textContent = String(state.score);
+    finalCorrect.textContent = String(state.correct);
+    finalCombo.textContent = "x" + multiplierFor(state.bestCombo);
+    btnShare.textContent = "📋 Partager mon score";
 
     var pseudo = getPseudo();
     var best = getBestFor(pseudo);
@@ -752,7 +1001,66 @@
     showScreen("over");
   }
 
+  // ---------- Sharing ----------
+  function buildShareText() {
+    return "⚡ Réflex'Mot\n" +
+      getPseudo() + " — " + state.score + " points\n" +
+      "✅ " + state.correct + " bonnes réponses · 🔥 combo max x" + multiplierFor(state.bestCombo) +
+      "\nSauras-tu faire mieux ?";
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    // Fallback for browsers without the async clipboard API (and for file:// pages).
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      ok ? resolve() : reject(new Error("copy failed"));
+    });
+  }
+
+  function flashShareLabel(label) {
+    btnShare.textContent = label;
+    setTimeout(function () {
+      btnShare.textContent = "📋 Partager mon score";
+    }, 1800);
+  }
+
+  function shareScore() {
+    var text = buildShareText();
+    if (navigator.share) {
+      navigator.share({ title: "Réflex'Mot", text: text }).catch(function () {
+        // User dismissed the share sheet, or sharing is unavailable: fall back to copy.
+        copyText(text).then(function () {
+          flashShareLabel("✅ Score copié !");
+        }, function () {
+          flashShareLabel("❌ Copie impossible");
+        });
+      });
+      return;
+    }
+    copyText(text).then(function () {
+      flashShareLabel("✅ Score copié !");
+    }, function () {
+      flashShareLabel("❌ Copie impossible");
+    });
+  }
+
   // ---------- Input handling ----------
+  function renderSoundButton() {
+    btnSound.textContent = soundOn() ? "🔊 Sons activés" : "🔇 Sons coupés";
+  }
+
   pseudoForm.addEventListener("submit", function (e) {
     e.preventDefault();
     var name = pseudoInput.value.trim();
@@ -764,6 +1072,15 @@
     showStartScreen();
   });
   btnChangePseudo.addEventListener("click", showPseudoScreen);
+  btnShare.addEventListener("click", shareScore);
+  btnSound.addEventListener("click", function () {
+    setSoundOn(!soundOn());
+    renderSoundButton();
+    if (soundOn()) {
+      initAudio();
+      soundCorrect(1);
+    }
+  });
   btnLeaderboard.addEventListener("click", showLeaderboardScreen);
   btnOverLeaderboard.addEventListener("click", showLeaderboardScreen);
   btnLeaderboardBack.addEventListener("click", showStartScreen);
@@ -784,6 +1101,7 @@
   });
 
   // ---------- Init ----------
+  renderSoundButton();
   if (getPseudo()) {
     showStartScreen();
   } else {
