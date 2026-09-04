@@ -108,6 +108,11 @@
     padding: 2px 4px;
     cursor: pointer;
   }
+  .link-btn.danger { color: var(--no); }
+  .link-btn.danger.confirming {
+    font-weight: 800;
+    text-decoration: none;
+  }
   .pseudo-form {
     display: flex;
     flex-direction: column;
@@ -453,6 +458,7 @@
     <p class="subtitle">Meilleurs scores sur cet appareil</p>
     <ol class="leaderboard-list" id="leaderboard-list"></ol>
     <button class="btn-play" id="btn-leaderboard-back">Retour</button>
+    <button class="link-btn danger" id="btn-reset-scores" type="button">🗑️ Réinitialiser le classement</button>
   </section>
 
   <!-- Game screen -->
@@ -658,6 +664,9 @@
     scores[pseudo] = val;
     localStorage.setItem(SCORES_KEY, JSON.stringify(scores));
   }
+  function clearScores() {
+    localStorage.removeItem(SCORES_KEY);
+  }
 
   // ---------- Sound & haptics ----------
   var audioCtx = null;
@@ -747,6 +756,7 @@
   var btnLeaderboard = document.getElementById("btn-leaderboard");
   var btnOverLeaderboard = document.getElementById("btn-over-leaderboard");
   var btnLeaderboardBack = document.getElementById("btn-leaderboard-back");
+  var btnResetScores = document.getElementById("btn-reset-scores");
   var leaderboardList = document.getElementById("leaderboard-list");
   var btnSound = document.getElementById("btn-sound");
   var btnShare = document.getElementById("btn-share");
@@ -796,6 +806,8 @@
     entries.sort(function (a, b) { return b.score - a.score; });
 
     leaderboardList.innerHTML = "";
+    // Nothing to wipe when the board is already empty.
+    btnResetScores.hidden = entries.length === 0;
     if (entries.length === 0) {
       var empty = document.createElement("p");
       empty.className = "leaderboard-empty";
@@ -822,7 +834,31 @@
     });
   }
 
+  // Wiping the board is destructive, so the button asks for a second tap
+  // instead of firing on the first one.
+  var RESET_LABEL = "🗑️ Réinitialiser le classement";
+  var resetConfirmTimer = null;
+
+  function disarmReset() {
+    clearTimeout(resetConfirmTimer);
+    btnResetScores.classList.remove("confirming");
+    btnResetScores.textContent = RESET_LABEL;
+  }
+
+  function handleResetClick() {
+    if (btnResetScores.classList.contains("confirming")) {
+      clearScores();
+      disarmReset();
+      renderLeaderboard();
+      return;
+    }
+    btnResetScores.classList.add("confirming");
+    btnResetScores.textContent = "⚠️ Confirmer : tout effacer ?";
+    resetConfirmTimer = setTimeout(disarmReset, 4000);
+  }
+
   function showLeaderboardScreen() {
+    disarmReset();
     renderLeaderboard();
     showScreen("leaderboard");
   }
@@ -1084,6 +1120,7 @@
   btnLeaderboard.addEventListener("click", showLeaderboardScreen);
   btnOverLeaderboard.addEventListener("click", showLeaderboardScreen);
   btnLeaderboardBack.addEventListener("click", showStartScreen);
+  btnResetScores.addEventListener("click", handleResetClick);
   btnStart.addEventListener("click", startGame);
   btnRetry.addEventListener("click", startGame);
   btnYes.addEventListener("click", function () { handleAnswer(true); });
